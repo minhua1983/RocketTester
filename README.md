@@ -92,7 +92,7 @@ public class OrderService
             IsToPush = true,
             
             //信息（取消推送的话，可以把取消推送的原因写在这里；确认要需要推送的话，可以把成功的信息写在这里）
-            Message = "用户注册业务执行成功",
+            Message = "创建订单执行成功",
             
             //要传递什么数据给到下游订阅者（建议使用json字符把数据传递给到下游）
             Data = data
