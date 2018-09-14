@@ -8,10 +8,10 @@ namespace RocketTester.ONS.Model
 {
     public class ONSProducerAttribute : Attribute
     {
-        public string Topic { get; set; }
+        public ONSMessageTopic Topic { get; set; }
         public ONSMessageTag Tag { get; set; }
 
-        public ONSProducerAttribute(string topic, ONSMessageTag tag)
+        public ONSProducerAttribute(ONSMessageTopic topic, ONSMessageTag tag)
         {
             Topic = topic;
             Tag = tag;

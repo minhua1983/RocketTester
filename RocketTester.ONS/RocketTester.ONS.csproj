@@ -68,6 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Enum\ONSMessageTag.cs" />
+    <Compile Include="Enum\ONSMessageTopic.cs" />
     <Compile Include="Model\MyMessageListener.cs" />
     <Compile Include="Model\ONSConsumerAttribute.cs" />
     <Compile Include="Model\ONSProducerAttribute.cs" />

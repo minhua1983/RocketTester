@@ -233,7 +233,7 @@ namespace RocketTester.ONS.Util
             ONSProducerAttribute oneMethodAttribute = executerFuncMethodInfo.GetCustomAttribute<ONSProducerAttribute>();
 
             //body不能为空，否则要报错，Func<string,TransactionResult>对应方法中，lambda什么的错误，实际根本没错，就是Message实体的body为空
-            Message message = new Message(oneMethodAttribute.Topic, oneMethodAttribute.Tag.ToString(), "no content");
+            Message message = new Message(oneMethodAttribute.Topic.ToString().ToLower(), oneMethodAttribute.Tag.ToString(), "no content");
             string key = _ONSTopic + "_" + oneMethodAttribute.Tag.ToString() + "_" + Guid.NewGuid().ToString();
 
             //设置key作为自定义的消息唯一标识，不能用ONS消息自带的MsgId作为消息的唯一标识，因为它不保证一定不出现重复。
