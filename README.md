@@ -30,7 +30,22 @@ if(serviceResult.ReturnCode == 1)
 这种代码是我们最常见的处理方式，如果考虑再细一些，可以对“发送订单信息给到物流系统”这步做一个重试的机制（这个重试机制开发有一定复杂度），进而尽可能地实现最终一致性。
 
 ## 上游订单系统以阿里云rocketmq事务消息调用的方式
-先在订单系统的项目中引用RocketTester.ONS.dll，然后需要在订单系统中的Global.asax.cs中加入如下代码
+先在订单系统的项目中引用RocketTester.ONS.dll，然后在web.config的AppSettings中加入如下节点
+```
+    <!--Redis地址-->
+    <add key="RedisExchangeHosts" value="redis连接字符串" />
+    <!--ONS设置-->
+    <add key="ONSRedisDBNumber" value="redis所用的数据库号码"/>
+    <add key="ONSRedisTransactionResultExpireIn" value="存储TransactionResult的超时时间（单位秒），如18000"/>
+    <add key="ONSTopic" value="消息的主题"/>
+    <add key="ONSProducerId" value="消息生产者唯一标识"/>
+    <add key="ONSConsumerId" value="消息消费者唯一标识"/>
+    <add key="ONSAccessKey" value="RAM账号的AccessKey"/>
+    <add key="ONSSecretKey" value="RAM账号的SecretKey"/>
+    <add key="ONSCheckerTest" value="是否启用checker测试模式，默认得用false"/>
+```
+
+接着需要在订单系统中的Global.asax.cs中加入如下代码
 ```
     void Application_Start(object sender, EventArgs e)
     {
@@ -91,7 +106,22 @@ public class OrderService
 
 
 ## 下游物流系统以消息订阅方式来接收消息
-接下来需要设置一下物流系统的处理方式了。还是先在订单系统的项目中引用RocketTester.ONS.dll，然后需要在订单系统中的Global.asax.cs中加入如下代码
+接下来需要设置一下物流系统的处理方式了，还是先在订单系统的项目中引用RocketTester.ONS.dll，然后在web.config的AppSettings中加入如下节点
+```
+    <!--Redis地址-->
+    <add key="RedisExchangeHosts" value="redis连接字符串" />
+    <!--ONS设置-->
+    <add key="ONSRedisDBNumber" value="redis所用的数据库号码"/>
+    <add key="ONSRedisTransactionResultExpireIn" value="存储TransactionResult的超时时间（单位秒），如18000"/>
+    <add key="ONSTopic" value="消息的主题"/>
+    <add key="ONSProducerId" value="消息生产者唯一标识"/>
+    <add key="ONSConsumerId" value="消息消费者唯一标识"/>
+    <add key="ONSAccessKey" value="RAM账号的AccessKey"/>
+    <add key="ONSSecretKey" value="RAM账号的SecretKey"/>
+    <add key="ONSCheckerTest" value="是否启用checker测试模式，默认得用false"/>
+```
+
+接着需要在订单系统中的Global.asax.cs中加入如下代码
 ```
     void Application_Start(object sender, EventArgs e)
     {
