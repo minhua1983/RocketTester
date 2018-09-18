@@ -80,16 +80,16 @@ TransactionResult transactionResult = ONSHelper.Transact(orderService.Create, or
 ```
 public class OrderService
 {
-    [ONSProducer(ONSMessageTopic.ORDER_MSG, ONSMessageTag.OrderCreated)]
-    public TransactionResult Create(string orderInfoJson)
+    [ONSProducer(ONSMessageTopic.ORDER_MSG, ONSMessageTag.ORDER_CREATED)]
+    public ONSTransactionResult Create(string orderInfoJson)
     {
         ...
         ...
         ...
-        return new TransactionResult()
+        return new ONSTransactionResult()
         {
             //是否需要把消息推送到消息中心
-            IsToPush = true,
+            Pushable = true,
             
             //信息（取消推送的话，可以把取消推送的原因写在这里；确认要需要推送的话，可以把成功的信息写在这里）
             Message = "创建订单执行成功",
@@ -144,7 +144,7 @@ OrderReceiverService类的Receive方法需要加上[ONSConsumer]特性，用来�
 ```
 public class OrderReceiverService
 {
-    [ONSConsumer(ONSMessageTopic.ORDER_MSG, ONSMessageTag.OrderCreated)]
+    [ONSConsumer(ONSMessageTopic.ORDER_MSG, ONSMessageTag.ORDER_CREATED)]
     public void Receive(string data)
     {
         ...
