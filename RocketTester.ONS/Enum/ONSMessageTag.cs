@@ -14,16 +14,16 @@ namespace RocketTester.ONS.Enum
         /// <summary>
         /// 用户成功注册
         /// </summary>
-        UserRegistered,
+        USER_REGISTERED,
 
         /// <summary>
         /// 用户成功预订
         /// </summary>
-        UserReserved,
+        USER_RESERVED,
 
         /// <summary>
         /// 用户资料同步
         /// </summary>
-        UserSynchronized
+        USER_SYNCHRONIZED
     }
 }

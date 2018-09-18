@@ -8,65 +8,69 @@ using System.Web;
 using System.Configuration;
 using Newtonsoft.Json;
 using ons;
-using RocketTester.ONS.Util;
 using Redis.Framework;
+using RocketTester.ONS.Model;
 
-namespace RocketTester.ONS.Model
+namespace RocketTester.ONS.Util
 {
-    public class MyLocalTransactionChecker : LocalTransactionChecker
+
+    public class ONSLocalTransactionExecuter : LocalTransactionExecuter
     {
         static string _RedisExchangeHosts = ConfigurationManager.AppSettings["RedisExchangeHosts"] ?? "";
         static int _ONSRedisDBNumber = string.IsNullOrEmpty(ConfigurationManager.AppSettings["ONSRedisDBNumber"]) ? 11 : int.Parse(ConfigurationManager.AppSettings["ONSRedisDBNumber"]);
         static int _ONSRedisTransactionResultExpireIn = string.IsNullOrEmpty(ConfigurationManager.AppSettings["ONSRedisTransactionResultExpireIn"]) ? 18000 : int.Parse(ConfigurationManager.AppSettings["ONSRedisTransactionResultExpireIn"]);
+        static bool _ONSCheckerTest = string.IsNullOrEmpty(ConfigurationManager.AppSettings["ONSCheckerTest"]) ? false : bool.Parse(ConfigurationManager.AppSettings["ONSCheckerTest"].ToLower());
 
-        /*/
+        /*
         Func<T, string> _func;
         T _model;
 
-        public string FuncResult { get; set; }
-
-        public MyLocalTransactionChecker(Func<T, string> fun, T model)
+        public MyLocalTransactionExecuter(Func<T, string> fun,T model)
         {
             _func = fun;
             _model = model;
         }
         //*/
 
-        public MyLocalTransactionChecker()
-        {
 
-        }
-
-        ~MyLocalTransactionChecker()
+        ~ONSLocalTransactionExecuter()
         {
         }
 
-        public override TransactionStatus check(Message value)
+        public override TransactionStatus execute(Message value)
         {
-            Console.WriteLine("check topic: {0}, tag:{1}, key:{2}, msgId:{3},msgbody:{4}, userProperty:{5}",
+            Console.WriteLine("execute topic: {0}, tag:{1}, key:{2}, msgId:{3},msgbody:{4}, userProperty:{5}",
             value.getTopic(), value.getTag(), value.getKey(), value.getMsgID(), value.getBody(), value.getUserProperties("VincentNoUser"));
             // 消息 ID(有可能消息体一样，但消息 ID 不一样。当前消息 ID 在控制台无法查询)
             //string msgId = value.getMsgID();
             // 消息体内容进行 crc32, 也可以使用其它的如 MD5
             // 消息 ID 和 crc32id 主要是用来防止消息重复
-            // 如果业务本身是幂等的， 可以忽略，否则需要利用 msgId 或 crc32Id 来做幂等
-            // 如果要求消息绝对不重复，推荐做法是对消息体 body 使用 crc32或 md5来防止重复消息 
+            // 如果要求消息绝对不重复，推荐做法是对消息体 body 使用 crc32或 md5来防止重复消息
             TransactionStatus transactionStatus = TransactionStatus.Unknow;
             string key = value.getKey();
-            LogHelper.Log("MyLocalTransactionChecker.execute.key  " + key);
+            LogHelper.Log("MyLocalTransactionExecuter.execute.key  " + key);
 
             try
             {
-                LogHelper.Log("MyLocalTransactionChecker.execute.after try...");
-                LogHelper.Log("MyLocalTransactionChecker.execute.checkerFunc " + value.getUserProperties("checkerFunc"));
-                LogHelper.Log("MyLocalTransactionChecker.execute.checkerFuncModel" + value.getUserProperties("checkerFuncModel"));
-                //*
-                Func<string, TransactionResult> checkerFunc = ONSHelper.CheckerFuncDictionary[value.getUserProperties("checkerFunc")];
-                string checkerFuncModel = value.getUserProperties("checkerFuncModel");
-                TransactionResult transactionResult = checkerFunc(checkerFuncModel);
+                //测试Check方法用，模拟出现问题，以Unknown状态提交消息
+                if (_ONSCheckerTest)
+                {
+                    LogHelper.Log("MyLocalTransactionExecuter -> MyLocalTransactionChecker");
+                    transactionStatus = TransactionStatus.Unknow;
+                    return transactionStatus;
+                }
 
-                LogHelper.Log("MyLocalTransactionChecker.execute.data:" + transactionResult.Data);
-                LogHelper.Log("MyLocalTransactionChecker.execute.isToPush:" + transactionResult.IsToPush);
+                LogHelper.Log("MyLocalTransactionExecuter.execute.after try...");
+                LogHelper.Log("MyLocalTransactionExecuter.execute.executerFunc " + value.getUserProperties("executerFunc"));
+                LogHelper.Log("MyLocalTransactionExecuter.execute.executerFuncModel" + value.getUserProperties("executerFuncModel"));
+                //*
+                //string funcResult = _func(_model);
+                Func<string, ONSTransactionResult> executerFunc = ONSHelper.ExecuterFuncDictionary[value.getUserProperties("executerFunc")];
+                string executerFuncModel = value.getUserProperties("executerFuncModel");
+                ONSTransactionResult transactionResult = executerFunc(executerFuncModel);
+
+                LogHelper.Log("MyLocalTransactionExecuter.execute.message:" + transactionResult.Message);
+                LogHelper.Log("MyLocalTransactionExecuter.execute.pushable:" + transactionResult.Pushable);
 
                 string result = JsonConvert.SerializeObject(transactionResult);
 
@@ -79,28 +83,28 @@ namespace RocketTester.ONS.Model
                         transactionStatus = TransactionStatus.Unknow;
                         return transactionStatus;
                     }
-                    LogHelper.Log("MyLocalTransactionChecker.execute.result:true");
+                    LogHelper.Log("MyLocalTransactionExecuter.execute.result:true");
                 }
                 catch (Exception e)
                 {
-                    LogHelper.Log("MyLocalTransactionChecker.execute.result:false, error:" + e.Message);
+                    LogHelper.Log("MyLocalTransactionExecuter.execute.result:false, error:" + e.Message);
                 }
 
-                if (transactionResult.IsToPush)
+                if (transactionResult.Pushable)
                 {
-                    // 本地事务成功、提交消息
+                    // 本地事务成功则提交消息
                     transactionStatus = TransactionStatus.CommitTransaction;
                 }
                 else
                 {
-                    // 本地事务失败、回滚消息
+                    // 本地事务失败则回滚消息
                     transactionStatus = TransactionStatus.RollbackTransaction;
                 }
             }
             catch (Exception e)
             {
                 //exception handle
-                LogHelper.Log("MyLocalTransactionChecker.execute.error:" + e.Message);
+                LogHelper.Log("MyLocalTransactionExecuter.execute.error:" + e.Message);
             }
             return transactionStatus;
         }

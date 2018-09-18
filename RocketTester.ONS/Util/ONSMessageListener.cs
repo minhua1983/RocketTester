@@ -10,25 +10,25 @@ using System.Collections.Concurrent;
 using Action = ons.Action;
 using ons;
 using Redis.Framework;
-using RocketTester.ONS.Util;
 using Newtonsoft.Json;
+using RocketTester.ONS.Model;
 
-namespace RocketTester.ONS.Model
+namespace RocketTester.ONS.Util
 {
     /// <summary>
     /// MyMessageListener类继承自ons.MessageListener。当pushConsumer订阅消息后，会调用consume
     /// </summary>
-    public class MyMessageListener : MessageListener
+    public class ONSMessageListener : MessageListener
     {
         static string _RedisExchangeHosts = ConfigurationManager.AppSettings["RedisExchangeHosts"] ?? "";
         static int _ONSRedisDBNumber = string.IsNullOrEmpty(ConfigurationManager.AppSettings["ONSRedisDBNumber"]) ? 11 : int.Parse(ConfigurationManager.AppSettings["ONSRedisDBNumber"]);
 
-        public MyMessageListener()
+        public ONSMessageListener()
         {
             LogHelper.Log("MyMessageListener");
         }
 
-        ~MyMessageListener()
+        ~ONSMessageListener()
         {
         }
 
@@ -67,7 +67,7 @@ namespace RocketTester.ONS.Model
 
             try
             {
-                TransactionResult transactionResult = JsonConvert.DeserializeObject<TransactionResult>(result);
+                ONSTransactionResult transactionResult = JsonConvert.DeserializeObject<ONSTransactionResult>(result);
 
 
                 string data = transactionResult.Data;

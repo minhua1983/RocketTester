@@ -69,12 +69,12 @@
   <ItemGroup>
     <Compile Include="Enum\ONSMessageTag.cs" />
     <Compile Include="Enum\ONSMessageTopic.cs" />
-    <Compile Include="Model\MyMessageListener.cs" />
+    <Compile Include="Util\ONSMessageListener.cs" />
     <Compile Include="Model\ONSConsumerAttribute.cs" />
     <Compile Include="Model\ONSProducerAttribute.cs" />
-    <Compile Include="Model\MyLocalTransactionChecker.cs" />
-    <Compile Include="Model\MyLocalTransactionExecuter.cs" />
-    <Compile Include="Model\TransactionResult.cs" />
+    <Compile Include="Util\ONSLocalTransactionChecker.cs" />
+    <Compile Include="Util\ONSLocalTransactionExecuter.cs" />
+    <Compile Include="Model\ONSTransactionResult.cs" />
     <Compile Include="SDK\Action.cs" />
     <Compile Include="SDK\ConsumeContext.cs" />
     <Compile Include="SDK\ConsumeOrderContext.cs" />

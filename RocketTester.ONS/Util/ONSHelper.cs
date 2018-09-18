@@ -23,12 +23,12 @@ namespace RocketTester.ONS.Util
         /// <summary>
         /// executer委托实例字典
         /// </summary>
-        public static ConcurrentDictionary<string, Func<string, TransactionResult>> ExecuterFuncDictionary { get; set; }
+        public static ConcurrentDictionary<string, Func<string, ONSTransactionResult>> ExecuterFuncDictionary { get; set; }
 
         /// <summary>
         /// checker委托实例字典
         /// </summary>
-        public static ConcurrentDictionary<string, Func<string, TransactionResult>> CheckerFuncDictionary { get; set; }
+        public static ConcurrentDictionary<string, Func<string, ONSTransactionResult>> CheckerFuncDictionary { get; set; }
         #endregion
 
         #region 字段
@@ -37,15 +37,15 @@ namespace RocketTester.ONS.Util
         //启用redis第N个数据库
         static int _ONSRedisDBNumber = string.IsNullOrEmpty(ConfigurationManager.AppSettings["ONSRedisDBNumber"]) ? 11 : int.Parse(ConfigurationManager.AppSettings["ONSRedisDBNumber"]);
         //获取事务消息主题
-        private static string _ONSTopic = ConfigurationManager.AppSettings["ONSTopic"] ?? "";
+        static string _ONSTopic = ConfigurationManager.AppSettings["ONSTopic"] ?? "";
         //获取事务消息的上游生产者唯一标识
-        private static string _ONSProducerId = ConfigurationManager.AppSettings["ONSProducerId"] ?? "";
+        static string _ONSProducerId = ConfigurationManager.AppSettings["ONSProducerId"] ?? "";
         //获取事务消息的下游消费者唯一标识
-        private static string _ONSConsumerId = ConfigurationManager.AppSettings["ONSConsumerId"] ?? "";
+        static string _ONSConsumerId = ConfigurationManager.AppSettings["ONSConsumerId"] ?? "";
         //获取RAM控制台消息队列账号的AccessKey
-        private static string _ONSAccessKey = ConfigurationManager.AppSettings["ONSAccessKey"] ?? "";
+        static string _ONSAccessKey = ConfigurationManager.AppSettings["ONSAccessKey"] ?? "";
         //获取RAM控制台消息队列账号的SecretKey
-        private static string _ONSSecretKey = ConfigurationManager.AppSettings["ONSSecretKey"] ?? "";
+        static string _ONSSecretKey = ConfigurationManager.AppSettings["ONSSecretKey"] ?? "";
 
         private static object _transactionProducerLockHelper = new object();
         private static TransactionProducer _transactionProducer;
@@ -124,8 +124,8 @@ namespace RocketTester.ONS.Util
                 {
                     if (_transactionProducer == null)
                     {
-                        MyLocalTransactionChecker myChecker = new MyLocalTransactionChecker();
-                        _transactionProducer = ONSFactory.getInstance().createTransactionProducer(ONSProducerFactoryProperty, myChecker);
+                        ONSLocalTransactionChecker checker = new ONSLocalTransactionChecker();
+                        _transactionProducer = ONSFactory.getInstance().createTransactionProducer(ONSProducerFactoryProperty, checker);
                     }
                 }
             }
@@ -213,7 +213,7 @@ namespace RocketTester.ONS.Util
         /// <param name="executerFunc">executer委托实例</param>
         /// <param name="executerFuncModel">executer委托实例所需的参数</param>
         /// <returns></returns>
-        public static TransactionResult Transact(Func<string, TransactionResult> executerFunc, string executerFuncModel)
+        public static ONSTransactionResult Transact(Func<string, ONSTransactionResult> executerFunc, string executerFuncModel)
         {
             return Transact(executerFunc, executerFuncModel, executerFunc, executerFuncModel);
         }
@@ -226,7 +226,7 @@ namespace RocketTester.ONS.Util
         /// <param name="checkerFunc">checker委托实例</param>
         /// <param name="checkerFuncModel">checker委托实例所需的参数</param>
         /// <returns></returns>
-        public static TransactionResult Transact(Func<string, TransactionResult> executerFunc, string executerFuncModel, Func<string, TransactionResult> checkerFunc, string checkerFuncModel)
+        public static ONSTransactionResult Transact(Func<string, ONSTransactionResult> executerFunc, string executerFuncModel, Func<string, ONSTransactionResult> checkerFunc, string checkerFuncModel)
         {
             MethodInfo checkerFuncMethodInfo = checkerFunc.Method;
             MethodInfo executerFuncMethodInfo = executerFunc.Method;
@@ -262,12 +262,12 @@ namespace RocketTester.ONS.Util
             }
 
             //实例化LocalTransactionExecuter对象
-            MyLocalTransactionExecuter myLocalTransactionExecuter = new MyLocalTransactionExecuter();
+            ONSLocalTransactionExecuter executer = new ONSLocalTransactionExecuter();
 
             LogHelper.Log("get ready to send message...");
 
             //生成半消息，并调用LocalTransactionExecuter对象的execute方法，它内部会执行委托实例（同时会将执行后的TransactionResult以Message的key为redis的key存入redis中），根据执行结果再决定是否要将消息状态设置为rollback或commit
-            SendResultONS sendResultONS = TransactionProducer.send(message, myLocalTransactionExecuter);
+            SendResultONS sendResultONS = TransactionProducer.send(message, executer);
 
             LogHelper.Log("key " + key);
 
@@ -280,7 +280,7 @@ namespace RocketTester.ONS.Util
             LogHelper.Log("");
 
             //反序列化获取到一个TransactionResult对象
-            return JsonConvert.DeserializeObject<TransactionResult>(result);
+            return JsonConvert.DeserializeObject<ONSTransactionResult>(result);
         }
         #endregion
 
@@ -333,13 +333,13 @@ namespace RocketTester.ONS.Util
             LogHelper.Log("ONSConsumerMethodInfoList.Count " + ONSConsumerMethodInfoList.Count);
 
             //初始化Executer方法对应的委托实例字典
-            ExecuterFuncDictionary = new ConcurrentDictionary<string, Func<string, TransactionResult>>();
+            ExecuterFuncDictionary = new ConcurrentDictionary<string, Func<string, ONSTransactionResult>>();
             //初始化Checker方法对应的委托实例字典
-            CheckerFuncDictionary = new ConcurrentDictionary<string, Func<string, TransactionResult>>();
+            CheckerFuncDictionary = new ConcurrentDictionary<string, Func<string, ONSTransactionResult>>();
             //启动上游事务生产者
             ONSHelper.TransactionProducer.start();
             //下游事务消费者订阅上游事务消息生产的消息
-            ONSHelper.PushConsumer.subscribe(_ONSTopic, "*", new MyMessageListener());
+            ONSHelper.PushConsumer.subscribe(_ONSTopic, "*", new ONSMessageListener());
             //启动下游事务消费者
             ONSHelper.PushConsumer.start();
         }

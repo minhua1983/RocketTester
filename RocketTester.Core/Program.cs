@@ -48,7 +48,7 @@ namespace RocketTester.Core
             //*/
 
             //*
-            ONSHelper.PushConsumer.subscribe(_ONSTopic, "*", new MyMessageListener());
+            ONSHelper.PushConsumer.subscribe(_ONSTopic, "*", new ONSMessageListener());
             ONSHelper.PushConsumer.start();
 
             string command = Console.ReadLine();

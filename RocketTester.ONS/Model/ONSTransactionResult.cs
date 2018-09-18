@@ -6,17 +6,17 @@ using System.Threading.Tasks;
 
 namespace RocketTester.ONS.Model
 {
-    public class TransactionResult
+    public class ONSTransactionResult
     {
-        public TransactionResult()
+        public ONSTransactionResult()
         {
-            IsToPush = true;
+            Pushable = true;
         }
 
         /// <summary>
         /// 是否需要把消息推送到消息中心
         /// </summary>
-        public bool IsToPush { get; set; }
+        public bool Pushable { get; set; }
 
         /// <summary>
         /// 信息（取消推送的话，可以把取消推送的原因写在这里；确认要需要推送的话，可以把成功的信息写在这里）
