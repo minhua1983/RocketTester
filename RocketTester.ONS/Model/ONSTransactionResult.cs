@@ -24,7 +24,7 @@ namespace RocketTester.ONS.Model
         public string Message { get; set; }
 
         /// <summary>
-        /// 要传递什么数据给到下游订阅者（这个数据的格式需要和下游订阅者协商，由于上下游可能不是一个开发语言开发的，因此建议使用json字符把数据传递给到下游）
+        /// 要传递什么数据给到下游订阅者（这个数据的格式需要和下游订阅者协商，由于上下游可能不是一个开发语言开发的，因此建议使用json字符把当前对象的实例传递给到下游）
         /// </summary>
         public string Data { get; set; }
     }
