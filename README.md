@@ -73,7 +73,7 @@ string orderInfoJson = JsonConvert.SerializeObject(orderInfo)
 OrderService orderService = new OrderService();
 
 //创建订单，并获取结果
-TransactionResult transactionResult = ONSHelper.Transact(orderService.Create, orderInfoJson);
+ONSTransactionResult transactionResult = ONSHelper.Transact(orderService.Create, orderInfoJson);
 ```
 
 当然OrderService类的Create方法需要加上[ONSProducer]特性，用来设置消息的主题和标签。标签由框架定义为枚举。参数必须是string类型，返回类型必须是ONSTransactionResult类型。
