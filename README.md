@@ -36,7 +36,7 @@ if(serviceResult.ReturnCode == 1)
     <add key="RedisExchangeHosts" value="redis连接字符串" />
     <!--ONS设置-->
     <add key="ONSRedisDBNumber" value="redis所用的数据库号码"/>
-    <add key="ONSRedisTransactionResultExpireIn" value="存储TransactionResult的超时时间（单位秒），如18000"/>
+    <add key="ONSRedisTransactionResultExpireIn" value="存储ONSTransactionResult的超时时间（单位秒），如18000"/>
     <add key="ONSTopic" value="消息的主题"/>
     <add key="ONSProducerId" value="消息生产者唯一标识"/>
     <add key="ONSConsumerId" value="消息消费者唯一标识"/>
@@ -76,7 +76,7 @@ OrderService orderService = new OrderService();
 TransactionResult transactionResult = ONSHelper.Transact(orderService.Create, orderInfoJson);
 ```
 
-当然OrderService类的Create方法需要加上[ONSProducer]特性，用来设置消息的主题和标签。标签由框架定义为枚举。参数必须是string类型，返回类型必须是TransactionResult类型。
+当然OrderService类的Create方法需要加上[ONSProducer]特性，用来设置消息的主题和标签。标签由框架定义为枚举。参数必须是string类型，返回类型必须是ONSTransactionResult类型。
 ```
 public class OrderService
 {
