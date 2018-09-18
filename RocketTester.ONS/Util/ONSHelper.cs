@@ -50,17 +50,17 @@ namespace RocketTester.ONS.Util
         //获取RAM控制台消息队列账号的SecretKey
         static string _ONSSecretKey = ConfigurationManager.AppSettings["ONSSecretKey"] ?? "";
 
-        private static object _transactionProducerLockHelper = new object();
-        private static TransactionProducer _transactionProducer;
+        static object _transactionProducerLockHelper = new object();
+        static TransactionProducer _transactionProducer;
 
-        private static object _onsProducerFactoryPropertyLockHelper = new object();
-        private static ONSFactoryProperty _onsProducerFactoryProperty;
+        static object _onsProducerFactoryPropertyLockHelper = new object();
+        static ONSFactoryProperty _onsProducerFactoryProperty;
 
-        private static object _pushConsumerLockHelper = new object();
-        private static PushConsumer _pushConsumer;
+        static object _pushConsumerLockHelper = new object();
+        static PushConsumer _pushConsumer;
 
-        private static object _onsConsumerFactoryPropertyLockHelper = new object();
-        private static ONSFactoryProperty _onsConsumerFactoryProperty;
+        static object _onsConsumerFactoryPropertyLockHelper = new object();
+        static ONSFactoryProperty _onsConsumerFactoryProperty;
 
         #endregion
 

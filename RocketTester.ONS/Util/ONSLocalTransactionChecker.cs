@@ -19,19 +19,6 @@ namespace RocketTester.ONS.Util
         static int _ONSRedisDBNumber = string.IsNullOrEmpty(ConfigurationManager.AppSettings["ONSRedisDBNumber"]) ? 11 : int.Parse(ConfigurationManager.AppSettings["ONSRedisDBNumber"]);
         static int _ONSRedisTransactionResultExpireIn = string.IsNullOrEmpty(ConfigurationManager.AppSettings["ONSRedisTransactionResultExpireIn"]) ? 18000 : int.Parse(ConfigurationManager.AppSettings["ONSRedisTransactionResultExpireIn"]);
 
-        /*/
-        Func<T, string> _func;
-        T _model;
-
-        public string FuncResult { get; set; }
-
-        public MyLocalTransactionChecker(Func<T, string> fun, T model)
-        {
-            _func = fun;
-            _model = model;
-        }
-        //*/
-
         public ONSLocalTransactionChecker()
         {
 
@@ -53,20 +40,20 @@ namespace RocketTester.ONS.Util
             // 如果要求消息绝对不重复，推荐做法是对消息体 body 使用 crc32或 md5来防止重复消息 
             TransactionStatus transactionStatus = TransactionStatus.Unknow;
             string key = value.getKey();
-            LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.execute.key  " + key);
+            LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.execute.key  " + key);
 
             try
             {
-                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.check.after try...");
-                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.check.checkerFunc " + value.getUserProperties("checkerFunc"));
-                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.check.checkerFuncModel" + value.getUserProperties("checkerFuncModel"));
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.after try...");
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.checkerFunc " + value.getUserProperties("checkerFunc"));
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.checkerFuncModel" + value.getUserProperties("checkerFuncModel"));
                 //*
                 Func<string, ONSTransactionResult> checkerFunc = ONSHelper.CheckerFuncDictionary[value.getUserProperties("checkerFunc")];
                 string checkerFuncModel = value.getUserProperties("checkerFuncModel");
                 ONSTransactionResult transactionResult = checkerFunc(checkerFuncModel);
 
-                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.check.data:" + transactionResult.Data);
-                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.check.pushable:" + transactionResult.Pushable);
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.data:" + transactionResult.Data);
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.pushable:" + transactionResult.Pushable);
 
                 string result = JsonConvert.SerializeObject(transactionResult);
 
@@ -79,11 +66,11 @@ namespace RocketTester.ONS.Util
                         transactionStatus = TransactionStatus.Unknow;
                         return transactionStatus;
                     }
-                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.check.result:true");
+                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.result:true");
                 }
                 catch (Exception e)
                 {
-                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.check.result:false, error:" + e.Message);
+                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.result:false, error:" + e.Message);
                 }
 
                 if (transactionResult.Pushable)
@@ -100,7 +87,7 @@ namespace RocketTester.ONS.Util
             catch (Exception e)
             {
                 //exception handle
-                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.check.error:" + e.Message);
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.error:" + e.Message);
             }
             return transactionStatus;
         }
