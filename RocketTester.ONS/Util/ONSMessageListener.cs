@@ -47,7 +47,7 @@ namespace RocketTester.ONS.Util
 
 
             //*
-            LogHelper.Log("consume...");
+            LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",consume...");
 
 
 
@@ -76,7 +76,7 @@ namespace RocketTester.ONS.Util
 
                 LogHelper.Log(data);
 
-                
+
 
 
                 ONSHelper.ONSConsumerMethodInfoList.ForEach(methodInfo =>
@@ -92,8 +92,8 @@ namespace RocketTester.ONS.Util
                                 Assembly assembly = Assembly.GetAssembly(type);
                                 object o = assembly.CreateInstance(type.FullName);
                                 object[] os = new object[1] { data };
-                                methodInfo.Invoke(o, os);
-                                needToCommit = true;
+                                needToCommit = (bool)methodInfo.Invoke(o, os);
+                                LogHelper.Log("MESSAGE_KEY:" + value .getKey()+ ",needToCommit:" + needToCommit + "\n");
                             }
                         }
                     }
@@ -101,7 +101,7 @@ namespace RocketTester.ONS.Util
             }
             catch (Exception e)
             {
-                 //如果大量错误导致消息堆积，可以这里设置为true，但是还是不建议这样做，因为一般是因为Redis里面key的值发生了结构变化，在进行json反序列化时出错导致，此时如果设置为true，但是下游业务还未执行，这样从流程上来说是有问题的，应该第一时间发现，并把旧格式的数据，修改为新格式的数据，之后重新尝试发送到下游后即可消费。
+                //如果大量错误导致消息堆积，可以这里设置为true，但是还是不建议这样做，因为一般是因为Redis里面key的值发生了结构变化，在进行json反序列化时出错导致，此时如果设置为true，但是下游业务还未执行，这样从流程上来说是有问题的，应该第一时间发现，并把旧格式的数据，修改为新格式的数据，之后重新尝试发送到下游后即可消费。
 
                 //也不能手动删除redis中的key，否则导致JsonConvert.DeserializeObject<TransactionResult>(result)出错
                 //needToCommit = true; 
@@ -111,12 +111,12 @@ namespace RocketTester.ONS.Util
             //*/
             if (needToCommit)
             {
-                LogHelper.Log("ons.Action.CommitMessage...\n");
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ons.Action.CommitMessage...\n");
                 return ons.Action.CommitMessage;
             }
             else
             {
-                LogHelper.Log("ons.Action.ReconsumeLater...\n");
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ons.Action.ReconsumeLater...\n");
                 return ons.Action.ReconsumeLater;
             }
         }

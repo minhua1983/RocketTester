@@ -12,6 +12,9 @@ using Newtonsoft.Json;
 
 namespace RocketTester.ONS.Util
 {
+    /// <summary>
+    /// 事务消息帮助类，事务未提交状态，第一次回查（调用Checker.execute方法）在0~5秒后，之后每5秒会再次回查。消费未提交的话，历经16次4小时46分钟。
+    /// </summary>
     public class ONSHelper
     {
         #region 属性

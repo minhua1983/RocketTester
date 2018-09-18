@@ -53,20 +53,20 @@ namespace RocketTester.ONS.Util
             // 如果要求消息绝对不重复，推荐做法是对消息体 body 使用 crc32或 md5来防止重复消息 
             TransactionStatus transactionStatus = TransactionStatus.Unknow;
             string key = value.getKey();
-            LogHelper.Log("MyLocalTransactionChecker.execute.key  " + key);
+            LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.execute.key  " + key);
 
             try
             {
-                LogHelper.Log("MyLocalTransactionChecker.execute.after try...");
-                LogHelper.Log("MyLocalTransactionChecker.execute.checkerFunc " + value.getUserProperties("checkerFunc"));
-                LogHelper.Log("MyLocalTransactionChecker.execute.checkerFuncModel" + value.getUserProperties("checkerFuncModel"));
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.check.after try...");
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.check.checkerFunc " + value.getUserProperties("checkerFunc"));
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.check.checkerFuncModel" + value.getUserProperties("checkerFuncModel"));
                 //*
                 Func<string, ONSTransactionResult> checkerFunc = ONSHelper.CheckerFuncDictionary[value.getUserProperties("checkerFunc")];
                 string checkerFuncModel = value.getUserProperties("checkerFuncModel");
                 ONSTransactionResult transactionResult = checkerFunc(checkerFuncModel);
 
-                LogHelper.Log("MyLocalTransactionChecker.execute.data:" + transactionResult.Data);
-                LogHelper.Log("MyLocalTransactionChecker.execute.pushable:" + transactionResult.Pushable);
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.check.data:" + transactionResult.Data);
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.check.pushable:" + transactionResult.Pushable);
 
                 string result = JsonConvert.SerializeObject(transactionResult);
 
@@ -79,11 +79,11 @@ namespace RocketTester.ONS.Util
                         transactionStatus = TransactionStatus.Unknow;
                         return transactionStatus;
                     }
-                    LogHelper.Log("MyLocalTransactionChecker.execute.result:true");
+                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.check.result:true");
                 }
                 catch (Exception e)
                 {
-                    LogHelper.Log("MyLocalTransactionChecker.execute.result:false, error:" + e.Message);
+                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.check.result:false, error:" + e.Message);
                 }
 
                 if (transactionResult.Pushable)
@@ -100,7 +100,7 @@ namespace RocketTester.ONS.Util
             catch (Exception e)
             {
                 //exception handle
-                LogHelper.Log("MyLocalTransactionChecker.execute.error:" + e.Message);
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",MyLocalTransactionChecker.check.error:" + e.Message);
             }
             return transactionStatus;
         }
