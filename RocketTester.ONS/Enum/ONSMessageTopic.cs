@@ -11,6 +11,6 @@ namespace RocketTester.ONS.Enum
     /// </summary>
     public enum ONSMessageTopic
     {
-        ORDER_MSG
+        TRANS_MSG
     }
 }

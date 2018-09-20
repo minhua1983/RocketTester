@@ -49,6 +49,8 @@ namespace RocketTester.ONS.Util
         static string _ONSAccessKey = ConfigurationManager.AppSettings["ONSAccessKey"] ?? "";
         //获取RAM控制台消息队列账号的SecretKey
         static string _ONSSecretKey = ConfigurationManager.AppSettings["ONSSecretKey"] ?? "";
+        //获取当前环境，p代表生产环境production，s代表测试环境staging，d代表开发环境development
+        static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "p";
 
         static object _transactionProducerLockHelper = new object();
         static TransactionProducer _transactionProducer;
@@ -236,7 +238,7 @@ namespace RocketTester.ONS.Util
             ONSProducerAttribute oneMethodAttribute = executerFuncMethodInfo.GetCustomAttribute<ONSProducerAttribute>();
 
             //body不能为空，否则要报错，Func<string,TransactionResult>对应方法中，lambda什么的错误，实际根本没错，就是Message实体的body为空
-            Message message = new Message(oneMethodAttribute.Topic.ToString().ToLower(), oneMethodAttribute.Tag.ToString(), "no content");
+            Message message = new Message(_Environment + "_" + oneMethodAttribute.Topic.ToString().ToLower(), oneMethodAttribute.Tag.ToString(), "no content");
             string key = _ONSTopic + "_" + oneMethodAttribute.Tag.ToString() + "_" + Guid.NewGuid().ToString();
 
             //设置key作为自定义的消息唯一标识，不能用ONS消息自带的MsgId作为消息的唯一标识，因为它不保证一定不出现重复。

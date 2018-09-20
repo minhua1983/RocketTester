@@ -52,6 +52,7 @@ namespace RocketTester.ONS.Util
 
             try
             {
+                /*
                 //测试Check方法用，模拟出现问题，以Unknown状态提交消息
                 if (_ONSCheckerTest)
                 {
@@ -59,6 +60,7 @@ namespace RocketTester.ONS.Util
                     transactionStatus = TransactionStatus.Unknow;
                     return transactionStatus;
                 }
+                //*/
 
                 LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.after try...");
                 LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.executerFunc " + value.getUserProperties("executerFunc"));
