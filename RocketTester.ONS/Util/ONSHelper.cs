@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Configuration;
 using ons;
 using RocketTester.ONS.Model;
+using RocketTester.ONS.Service;
 using Redis.Framework;
 using Newtonsoft.Json;
 
@@ -18,20 +19,36 @@ namespace RocketTester.ONS.Util
     public class ONSHelper
     {
         #region 属性
-        /// <summary>
-        /// 下游消费者方法列表
-        /// </summary>
-        public static List<MethodInfo> ONSConsumerMethodInfoList { get; set; }
 
         /// <summary>
-        /// executer委托实例字典
+        /// 上游生产者服务类列表
         /// </summary>
-        public static ConcurrentDictionary<string, Func<string, ONSTransactionResult>> ExecuterFuncDictionary { get; set; }
+        public static List<Type> ONSTransactionProducerServiceList { get; set; }
 
         /// <summary>
-        /// checker委托实例字典
+        /// 下游消费者服务类列表
         /// </summary>
-        public static ConcurrentDictionary<string, Func<string, ONSTransactionResult>> CheckerFuncDictionary { get; set; }
+        public static List<Type> ONSConsumerServiceList { get; set; }
+
+        /// <summary>
+        /// 上游生产者标签列表
+        /// </summary>
+        public static List<string> ONSTransactionProducerServiceTagList { get; set; }
+
+        /// <summary>
+        /// 下游消费者标签列表
+        /// </summary>
+        public static List<string> ONSConsumerServiceTagList { get; set; }
+
+        /// <summary>
+        /// executer方法实例字典
+        /// </summary>
+        public static ConcurrentDictionary<string, MethodInfo> ExecuterMethodDictionary { get; set; }
+
+        /// <summary>
+        /// checker方法实例字典
+        /// </summary>
+        public static ConcurrentDictionary<string, MethodInfo> CheckerMethodDictionary { get; set; }
         #endregion
 
         #region 字段
@@ -211,6 +228,7 @@ namespace RocketTester.ONS.Util
         }
         #endregion
 
+        /*
         #region Transact 方法
         /// <summary>
         /// 执行委托实例，如果逻辑上成功，则由上游事务消息生产者发送消息到消息中心
@@ -288,6 +306,7 @@ namespace RocketTester.ONS.Util
             return JsonConvert.DeserializeObject<ONSTransactionResult>(result);
         }
         #endregion
+        //*/
 
         #region Initialize 方法
         /// <summary>
@@ -295,8 +314,81 @@ namespace RocketTester.ONS.Util
         /// </summary>
         public static void Initialize()
         {
-            //初始化自定义消费者方法列表
-            ONSConsumerMethodInfoList = new List<MethodInfo>();
+            //实例化生产者的服务类列表
+            ONSTransactionProducerServiceList = new List<Type>();
+            //实例化消费者的服务类列表
+            ONSConsumerServiceList = new List<Type>();
+            //实例化生产者的服务类标签列表
+            ONSTransactionProducerServiceTagList = new List<string>();
+            //实例化消费者的服务类标签列表
+            ONSConsumerServiceTagList = new List<string>();
+
+            //初始化服务类列表和服务类标签列表
+            InitialServiceListAndServiceTagList();
+            //获取字符串格式的消费者方法特性的标签列表
+            string consumerServiceTagString = GetConsumerServiceTagString();
+            LogHelper.Log("ONSConsumerServiceList.Count " + ONSConsumerServiceList.Count);
+
+            //实例化Executer方法对应的委托实例字典
+            ExecuterMethodDictionary = new ConcurrentDictionary<string, MethodInfo>();
+            //实例化Checker方法对应的委托实例字典
+            CheckerMethodDictionary = new ConcurrentDictionary<string, MethodInfo>();
+
+
+            //判断生产者的服务类是否存在
+            if (ONSTransactionProducerServiceList.Count > 0)
+            {
+                //输出生产者方法
+                ONSTransactionProducerServiceList.ForEach(type => LogHelper.Log("生产者的服务类：" + type.FullName));
+                //启动上游事务生产者
+                TransactionProducer.start();
+                LogHelper.Log("ONSHelper.TransactionProducer.start");
+            }
+
+            //判断消费者的服务类是否存在
+            if (ONSConsumerServiceList.Count > 0)
+            {
+                //输出消费者方法
+                ONSConsumerServiceList.ForEach(type => LogHelper.Log("消费者的服务类：" + type.FullName));
+                //下游事务消费者订阅上游事务消息生产的消息
+                PushConsumer.subscribe(_ONSTopic, consumerServiceTagString, new ONSMessageListener());
+                LogHelper.Log("ONSHelper.PushConsumer.subscribe " + consumerServiceTagString);
+                //启动下游事务消费者
+                PushConsumer.start();
+                LogHelper.Log("ONSHelper.PushConsumer.start");
+            }
+        }
+        #endregion
+
+        #region Destroy 方法
+        /// <summary>
+        /// 销毁ONS事务消息相关对象，一般在Application_End中调用
+        /// </summary>
+        public static void Destroy()
+        {
+            //这里千万不能用ONSHelper.TransactionProducer判断是否不为null，这样会导致被实例化
+            if (ONSHelper._transactionProducer != null)
+            {
+                //关闭上游事务消息生产者
+                TransactionProducer.shutdown();
+                LogHelper.Log("ONSHelper.TransactionProducer.shutdown");
+            }
+
+            //这里千万不能用ONSHelper.PushConsumer判断是否不为null，这样会导致被实例化
+            if (ONSHelper._pushConsumer != null)
+            {
+                //关闭下游事务消息消费者
+                PushConsumer.shutdown();
+                LogHelper.Log("ONSHelper.PushConsumer.shutdown");
+            }
+        }
+        #endregion
+
+        /// <summary>
+        /// 初始化消费者的方法和标签列表
+        /// </summary>
+        static void InitialServiceListAndServiceTagList()
+        {
             //获取当前应用域下的所有程序集
             Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
             //找出所有程序集下带有[ONSConsumer]特性的所有方法，并放入自定义消费者方法列表中
@@ -309,64 +401,70 @@ namespace RocketTester.ONS.Util
                     {
                         foreach (Type type in types)
                         {
-                            MethodInfo[] methodInfos = type.GetMethods();
-                            if (methodInfos != null)
+                            if (type.BaseType != null)
                             {
-                                foreach (MethodInfo methodInfo in methodInfos)
+                                //LogHelper.Log("" + type.FullName);
+
+                                
+                                //获取当前应用作为生产者的相关信息
+                                if (type.BaseType.FullName != null)
                                 {
-                                    bool hasONSConsumerAttribute = false;
-                                    IEnumerable<ONSConsumerAttribute> oneConsumerAttributes = methodInfo.GetCustomAttributes<ONSConsumerAttribute>();
-                                    if (oneConsumerAttributes != null)
+                                    if (type.BaseType.FullName.IndexOf("BaseTransactionProducerService") >= 0)
                                     {
-                                        foreach (ONSConsumerAttribute onsConsumerAttribute in oneConsumerAttributes)
+                                        ONSTransactionProducerServiceList.Add(type);
+                                        object service = assembly.CreateInstance(type.FullName);
+                                        string serviceTag = type.GetProperty("Tag").GetValue(service).ToString();
+                                        //判断是否存在tag，不存在则新增
+                                        if (!ONSTransactionProducerServiceTagList.Contains(serviceTag))
                                         {
-                                            hasONSConsumerAttribute = true;
+                                            ONSTransactionProducerServiceTagList.Add(serviceTag);
                                         }
                                     }
+                                }
 
-                                    if (hasONSConsumerAttribute)
+                                //*
+                                //获取当前应用作为消费者的相关信息
+                                if (type.BaseType.FullName != null)
+                                {
+                                    if (type.BaseType.FullName.IndexOf("BaseConsumerService") >= 0)
                                     {
-                                        ONSConsumerMethodInfoList.Add(methodInfo);
+                                        ONSConsumerServiceList.Add(type);
+                                        object service = assembly.CreateInstance(type.FullName);
+                                        string serviceTag = type.GetProperty("Tag").GetValue(service).ToString();
+                                        //判断是否存在tag，不存在则新增
+                                        if (!ONSConsumerServiceTagList.Contains(serviceTag))
+                                        {
+                                            ONSConsumerServiceTagList.Add(serviceTag);
+                                        }//*/
                                     }
                                 }
+                                //*/
                             }
                         }
                     }
                 }
             }
-
-            LogHelper.Log("ONSConsumerMethodInfoList.Count " + ONSConsumerMethodInfoList.Count);
-
-            //初始化Executer方法对应的委托实例字典
-            ExecuterFuncDictionary = new ConcurrentDictionary<string, Func<string, ONSTransactionResult>>();
-            //初始化Checker方法对应的委托实例字典
-            CheckerFuncDictionary = new ConcurrentDictionary<string, Func<string, ONSTransactionResult>>();
-            //启动上游事务生产者
-            ONSHelper.TransactionProducer.start();
-            //下游事务消费者订阅上游事务消息生产的消息
-            ONSHelper.PushConsumer.subscribe(_ONSTopic, "*", new ONSMessageListener());
-            //启动下游事务消费者
-            ONSHelper.PushConsumer.start();
         }
-        #endregion
 
-        #region Destroy 方法
         /// <summary>
-        /// 销毁ONS事务消息相关对象，一般在Application_End中调用
+        /// 获取字符串格式的标签列表
         /// </summary>
-        public static void Destroy()
+        /// <returns>返回字符串格式的标签列表</returns>
+        static string GetConsumerServiceTagString()
         {
-            if (ONSHelper.TransactionProducer != null)
+            string consumerTags = "";
+            for (int i = 0; i < ONSConsumerServiceTagList.Count; i++)
             {
-                //关闭上游事务消息生产者
-                ONSHelper.TransactionProducer.shutdown();
+                if (i < ONSConsumerServiceTagList.Count - 1)
+                {
+                    consumerTags += ONSConsumerServiceTagList[i] + "||";
+                }
+                else
+                {
+                    consumerTags += ONSConsumerServiceTagList[i];
+                }
             }
-            if (ONSHelper.PushConsumer != null)
-            {
-                //关闭下游事务消息消费者
-                ONSHelper.PushConsumer.shutdown();
-            }
+            return consumerTags;
         }
-        #endregion
     }
 }

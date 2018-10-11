@@ -6,10 +6,12 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Web;
 using System.Configuration;
+using System.Reflection;
 using Newtonsoft.Json;
 using ons;
 using Redis.Framework;
 using RocketTester.ONS.Model;
+using RocketTester.ONS.Service;
 
 namespace RocketTester.ONS.Util
 {
@@ -19,7 +21,6 @@ namespace RocketTester.ONS.Util
         static string _RedisExchangeHosts = ConfigurationManager.AppSettings["RedisExchangeHosts"] ?? "";
         static int _ONSRedisDBNumber = string.IsNullOrEmpty(ConfigurationManager.AppSettings["ONSRedisDBNumber"]) ? 11 : int.Parse(ConfigurationManager.AppSettings["ONSRedisDBNumber"]);
         static int _ONSRedisTransactionResultExpireIn = string.IsNullOrEmpty(ConfigurationManager.AppSettings["ONSRedisTransactionResultExpireIn"]) ? 18000 : int.Parse(ConfigurationManager.AppSettings["ONSRedisTransactionResultExpireIn"]);
-        static bool _ONSCheckerTest = string.IsNullOrEmpty(ConfigurationManager.AppSettings["ONSCheckerTest"]) ? false : bool.Parse(ConfigurationManager.AppSettings["ONSCheckerTest"].ToLower());
 
         /*
         Func<T, string> _func;
@@ -45,6 +46,7 @@ namespace RocketTester.ONS.Util
             //string msgId = value.getMsgID();
             // 消息体内容进行 crc32, 也可以使用其它的如 MD5
             // 消息 ID 和 crc32id 主要是用来防止消息重复
+            // 如果业务本身是幂等的， 可以忽略，否则需要利用 msgId 或 crc32Id 来做幂等
             // 如果要求消息绝对不重复，推荐做法是对消息体 body 使用 crc32或 md5来防止重复消息
             TransactionStatus transactionStatus = TransactionStatus.Unknow;
             string key = value.getKey();
@@ -52,55 +54,96 @@ namespace RocketTester.ONS.Util
 
             try
             {
-                /*
-                //测试Check方法用，模拟出现问题，以Unknown状态提交消息
-                if (_ONSCheckerTest)
-                {
-                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter -> ONSLocalTransactionChecker");
-                    transactionStatus = TransactionStatus.Unknow;
-                    return transactionStatus;
-                }
-                //*/
-
                 LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.after try...");
-                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.executerFunc " + value.getUserProperties("executerFunc"));
-                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.executerFuncModel" + value.getUserProperties("executerFuncModel"));
-                //*
-                //string funcResult = _func(_model);
-                Func<string, ONSTransactionResult> executerFunc = ONSHelper.ExecuterFuncDictionary[value.getUserProperties("executerFunc")];
-                string executerFuncModel = value.getUserProperties("executerFuncModel");
-                ONSTransactionResult transactionResult = executerFunc(executerFuncModel);
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.executerMethod " + value.getUserProperties("executerMethod"));
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.executerMethodParameter " + value.getUserProperties("executerMethodParameter"));
 
-                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.message:" + transactionResult.Message);
-                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.pushable:" + transactionResult.Pushable);
-
-                string result = JsonConvert.SerializeObject(transactionResult);
-
-                try
+                if (ONSHelper.ExecuterMethodDictionary.ContainsKey(value.getUserProperties("executerMethod")))
                 {
-                    RedisTool RT = new RedisTool(_ONSRedisDBNumber, _RedisExchangeHosts);
-                    bool isSaved = RT.StringSet(key, result, TimeSpan.FromSeconds(_ONSRedisTransactionResultExpireIn));
-                    if (!isSaved)
+                    MethodInfo methodInfo = ONSHelper.ExecuterMethodDictionary[value.getUserProperties("executerMethod")];
+                    string data = value.getUserProperties("executerMethodParameter");
+                    Type type = methodInfo.ReflectedType;
+
+                    Assembly assembly = Assembly.GetAssembly(type);
+                    object service = assembly.CreateInstance(type.FullName);
+                    ParameterInfo[] parameterInfos = methodInfo.GetParameters();
+
+                    LogHelper.Log(parameterInfos[0].ParameterType.ToString());
+
+
+                    ONSTransactionResult transactionResult;
+
+                    //判断类型
+                    if (parameterInfos[0].ParameterType.ToString().ToLower() == "system.string")
                     {
-                        transactionStatus = TransactionStatus.Unknow;
-                        return transactionStatus;
+                        //string类型
+                        transactionResult = (ONSTransactionResult)methodInfo.Invoke(service, new object[] { data });
                     }
-                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.result:true");
-                }
-                catch (Exception e)
-                {
-                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.result:false, error:" + e.Message);
-                }
+                    else
+                    {
+                        //自定义类型
+                        object parameter = JsonConvert.DeserializeObject(data, parameterInfos[0].ParameterType);
 
-                if (transactionResult.Pushable)
-                {
-                    // 本地事务成功则提交消息
-                    transactionStatus = TransactionStatus.CommitTransaction;
+                        /*
+                        LogHelper.Log(service.GetType().FullName);
+                        LogHelper.Log(service.GetType().GetProperty("Tag").GetValue(service).ToString());
+                        LogHelper.Log(service.GetType().GetProperty("Topic").GetValue(service).ToString());
+                        LogHelper.Log(parameterInfos[0].ParameterType.ToString());
+                        LogHelper.Log(methodInfo.Name);
+                        LogHelper.Log(methodInfo.DeclaringType.FullName);
+                        LogHelper.Log(methodInfo.ReflectedType.FullName);
+
+                        MethodInfo mi = service.GetType().GetMethod("Test", BindingFlags.NonPublic | BindingFlags.Instance);
+                        //mi.Invoke(service, new object[] { parameter });
+                        methodInfo.Invoke(service, new object[] { parameter });
+                        transactionResult = new ONSTransactionResult();
+                        //*/
+
+                        transactionResult = (ONSTransactionResult)methodInfo.Invoke(service, new object[] { parameter });
+
+                        LogHelper.Log("..................");
+                        
+                    }
+
+
+                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.data:" + transactionResult.Data);
+                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.message:" + transactionResult.Message);
+                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.pushable:" + transactionResult.Pushable);
+
+                    string result = JsonConvert.SerializeObject(transactionResult);
+
+                    try
+                    {
+                        RedisTool RT = new RedisTool(_ONSRedisDBNumber, _RedisExchangeHosts);
+                        bool isSaved = RT.StringSet(key, result, TimeSpan.FromSeconds(_ONSRedisTransactionResultExpireIn));
+                        if (!isSaved)
+                        {
+                            transactionStatus = TransactionStatus.Unknow;
+                            return transactionStatus;
+                        }
+                        LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.result:true");
+                    }
+                    catch (Exception e)
+                    {
+                        LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.result:false, error:" + e.Message);
+                    }
+
+                    if (transactionResult.Pushable)
+                    {
+                        // 本地事务成功则提交消息
+                        transactionStatus = TransactionStatus.CommitTransaction;
+                    }
+                    else
+                    {
+                        // 本地事务失败则回滚消息
+                        transactionStatus = TransactionStatus.RollbackTransaction;
+                    }
                 }
                 else
                 {
-                    // 本地事务失败则回滚消息
-                    transactionStatus = TransactionStatus.RollbackTransaction;
+                    // 不存在key则回滚消息，这里不能用RollbackTransaction，因为我们使用相同的topic在各个网站之间，这种机制会导致其他网站也会调用check方法，一旦RollbackTransaction，那么原先的网站不再重试调用check方法了，因此必须返回
+                    transactionStatus = TransactionStatus.Unknow;
+                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionExecuter.execute.error:ExecuterMethodDictionary中不存在key:" + value.getUserProperties("executerMethod"));
                 }
             }
             catch (Exception e)

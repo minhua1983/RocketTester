@@ -12,6 +12,7 @@ using ons;
 using Redis.Framework;
 using Newtonsoft.Json;
 using RocketTester.ONS.Model;
+using RocketTester.ONS.Service;
 
 namespace RocketTester.ONS.Util
 {
@@ -76,27 +77,38 @@ namespace RocketTester.ONS.Util
 
                 LogHelper.Log(data);
 
-
-
-
-                ONSHelper.ONSConsumerMethodInfoList.ForEach(methodInfo =>
+                ONSHelper.ONSConsumerServiceList.ForEach(type =>
                 {
-                    IEnumerable<ONSConsumerAttribute> onsConsumerAttributes = methodInfo.GetCustomAttributes<ONSConsumerAttribute>();
-                    if (onsConsumerAttributes != null)
+
+                    object service = Assembly.GetAssembly(type).CreateInstance(type.FullName);
+                    string serviceTag = type.GetProperty("Tag").GetValue(service).ToString();
+                    if (tag.ToLower() == serviceTag.ToLower())
                     {
-                        foreach (ONSConsumerAttribute oneConsumerAttribute in onsConsumerAttributes)
+                        //var parameter = service.ConvertStringToType(data);
+                        MethodInfo methodInfo = type.GetMethod("InternalProcess", BindingFlags.NonPublic | BindingFlags.Instance);
+                        //MethodInfo methodInfo = type.GetMethod("InternalProcess");
+
+                        ParameterInfo[] parameterInfos = methodInfo.GetParameters();
+
+                        LogHelper.Log(parameterInfos[0].ParameterType.ToString());
+
+                        //判断类型
+                        if (parameterInfos[0].ParameterType.ToString().ToLower() == "system.string")
                         {
-                            if (tag.Trim().ToLower() == oneConsumerAttribute.Tag.ToString().Trim().ToLower())
-                            {
-                                Type type = methodInfo.ReflectedType;
-                                Assembly assembly = Assembly.GetAssembly(type);
-                                object o = assembly.CreateInstance(type.FullName);
-                                object[] os = new object[1] { data };
-                                needToCommit = (bool)methodInfo.Invoke(o, os);
-                                LogHelper.Log("MESSAGE_KEY:" + value .getKey()+ ",needToCommit:" + needToCommit + "\n");
-                            }
+                            //string类型
+                            needToCommit = (bool)methodInfo.Invoke(service, new object[] { data });
                         }
+                        else
+                        {
+                            //自定义类型
+                            object parameter = JsonConvert.DeserializeObject(data, parameterInfos[0].ParameterType);
+                            needToCommit = (bool)methodInfo.Invoke(service, new object[] { parameter });
+                        }
+
+                        //needToCommit = service.Consume(data);
+                        LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",needToCommit:" + needToCommit + "\n");
                     }
+
                 });
             }
             catch (Exception e)

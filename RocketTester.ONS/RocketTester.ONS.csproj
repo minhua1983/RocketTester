@@ -69,9 +69,9 @@
   <ItemGroup>
     <Compile Include="Enum\ONSMessageTag.cs" />
     <Compile Include="Enum\ONSMessageTopic.cs" />
+    <Compile Include="Service\BaseConsumerService.cs" />
+    <Compile Include="Service\BaseTransactionProducerService.cs" />
     <Compile Include="Util\ONSMessageListener.cs" />
-    <Compile Include="Model\ONSConsumerAttribute.cs" />
-    <Compile Include="Model\ONSProducerAttribute.cs" />
     <Compile Include="Util\ONSLocalTransactionChecker.cs" />
     <Compile Include="Util\ONSLocalTransactionExecuter.cs" />
     <Compile Include="Model\ONSTransactionResult.cs" />
@@ -147,7 +147,9 @@
     <None Include="ONSClient4CPP.lib">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

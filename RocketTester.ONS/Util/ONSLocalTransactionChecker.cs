@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Web;
 using System.Configuration;
+using System.Reflection;
 using Newtonsoft.Json;
 using ons;
 using Redis.Framework;
@@ -40,48 +41,81 @@ namespace RocketTester.ONS.Util
             // 如果要求消息绝对不重复，推荐做法是对消息体 body 使用 crc32或 md5来防止重复消息 
             TransactionStatus transactionStatus = TransactionStatus.Unknow;
             string key = value.getKey();
-            LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.execute.key  " + key);
+            LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.key  " + key);
 
             try
             {
                 LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.after try...");
-                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.checkerFunc " + value.getUserProperties("checkerFunc"));
-                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.checkerFuncModel" + value.getUserProperties("checkerFuncModel"));
-                //*
-                Func<string, ONSTransactionResult> checkerFunc = ONSHelper.CheckerFuncDictionary[value.getUserProperties("checkerFunc")];
-                string checkerFuncModel = value.getUserProperties("checkerFuncModel");
-                ONSTransactionResult transactionResult = checkerFunc(checkerFuncModel);
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.checkerMethod " + value.getUserProperties("checkerMethod"));
+                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.checkerMethodParameter " + value.getUserProperties("checkerMethodParameter"));
 
-                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.data:" + transactionResult.Data);
-                LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.pushable:" + transactionResult.Pushable);
-
-                string result = JsonConvert.SerializeObject(transactionResult);
-
-                try
+                if (ONSHelper.CheckerMethodDictionary.ContainsKey(value.getUserProperties("checkerMethod")))
                 {
-                    RedisTool RT = new RedisTool(_ONSRedisDBNumber, _RedisExchangeHosts);
-                    bool isSaved = RT.StringSet(key, result, TimeSpan.FromSeconds(_ONSRedisTransactionResultExpireIn));
-                    if (!isSaved)
+                    MethodInfo methodInfo = ONSHelper.ExecuterMethodDictionary[value.getUserProperties("checkerMethod")];
+                    string data = value.getUserProperties("checkerMethodParameter");
+                    Type type = methodInfo.ReflectedType;
+
+                    Assembly assembly = Assembly.GetAssembly(type);
+                    object service = assembly.CreateInstance(type.FullName);
+                    ParameterInfo[] parameterInfos = methodInfo.GetParameters();
+
+                    LogHelper.Log(parameterInfos[0].ParameterType.ToString());
+
+
+                    ONSTransactionResult transactionResult;
+
+                    //判断类型
+                    if (parameterInfos[0].ParameterType.ToString().ToLower() == "system.string")
                     {
-                        transactionStatus = TransactionStatus.Unknow;
-                        return transactionStatus;
+                        //string类型
+                        transactionResult = (ONSTransactionResult)methodInfo.Invoke(service, new object[] { data });
                     }
-                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.result:true");
-                }
-                catch (Exception e)
-                {
-                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.result:false, error:" + e.Message);
-                }
+                    else
+                    {
+                        //自定义类型
+                        object parameter = JsonConvert.DeserializeObject(data, parameterInfos[0].ParameterType);
+                        transactionResult = (ONSTransactionResult)methodInfo.Invoke(service, new object[] { parameter });
+                    }
 
-                if (transactionResult.Pushable)
-                {
-                    // 本地事务成功、提交消息
-                    transactionStatus = TransactionStatus.CommitTransaction;
+
+                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.data:" + transactionResult.Data);
+                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.message:" + transactionResult.Message);
+                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.pushable:" + transactionResult.Pushable);
+
+                    string result = JsonConvert.SerializeObject(transactionResult);
+
+                    try
+                    {
+                        RedisTool RT = new RedisTool(_ONSRedisDBNumber, _RedisExchangeHosts);
+                        bool isSaved = RT.StringSet(key, result, TimeSpan.FromSeconds(_ONSRedisTransactionResultExpireIn));
+                        if (!isSaved)
+                        {
+                            transactionStatus = TransactionStatus.Unknow;
+                            return transactionStatus;
+                        }
+                        LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.result:true");
+                    }
+                    catch (Exception e)
+                    {
+                        LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.result:false, error:" + e.Message);
+                    }
+
+                    if (transactionResult.Pushable)
+                    {
+                        // 本地事务成功、提交消息
+                        transactionStatus = TransactionStatus.CommitTransaction;
+                    }
+                    else
+                    {
+                        // 本地事务失败、回滚消息
+                        transactionStatus = TransactionStatus.RollbackTransaction;
+                    }
                 }
                 else
                 {
-                    // 本地事务失败、回滚消息
-                    transactionStatus = TransactionStatus.RollbackTransaction;
+                    // 不存在key则回滚消息，这里不能用RollbackTransaction，因为我们使用相同的topic在各个网站之间，这种机制会导致其他网站也会调用check方法，一旦RollbackTransaction，那么原先的网站不再重试调用check方法了，因此必须返回unknow
+                    transactionStatus = TransactionStatus.Unknow;
+                    LogHelper.Log("MESSAGE_KEY:" + value.getKey() + ",ONSLocalTransactionChecker.check.error:CheckerFuncDictionary中不存在key:" + value.getUserProperties("checkerFunc"));
                 }
             }
             catch (Exception e)
