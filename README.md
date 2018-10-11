@@ -66,14 +66,14 @@ if(serviceResult.ReturnCode == 1)
 
 现在有了阿里云RocketMQ的事物消息后，经过封装后，可以这样调用。
 ```
-//json序列化orderInfo对象
-string orderInfoJson = JsonConvert.SerializeObject(orderInfo)
+//实例化Order对象
+Order order = new Order();
 
 //实例化订单服务类
 OrderService orderService = new OrderService();
 
 //创建订单，并获取结果
-ONSTransactionResult transactionResult = ONSHelper.Transact(orderService.Create, orderInfoJson);
+ONSTransactionResult transactionResult = orderService.Create(order);
 ```
 
 当然OrderService类类的ProcessCore的参数类型是可以任意类型的的，因为基类使用的是泛型，返回类型必须是ONSTransactionResult类型。此ProcessCore方法是基类的抽象方法，因此必须override。如果此方法执行过程中出现异常，框架会将消息以TransactionStatus.Unknow状态提交，之后0~5秒内执行第一次回查（即调用Checker.check方法），之后还是TransactionStatus.Unknow状态的话，会每5秒回查一次，直至消息状态为TransactionStatus.CommitTransaction或TransactionStatus.RollbackTransaction。
