@@ -76,12 +76,18 @@ OrderService orderService = new OrderService();
 ONSTransactionResult transactionResult = ONSHelper.Transact(orderService.Create, orderInfoJson);
 ```
 
-当然OrderService类的Create方法需要加上[ONSProducer]特性，用来设置消息的主题和标签。标签由框架定义为枚举。参数必须是string类型，返回类型必须是ONSTransactionResult类型。如果此方法执行过程中出现异常，框架会将消息以TransactionStatus.Unknow状态提交，之后0~5秒内执行第一次回查（即调用Checker.check方法），之后还是TransactionStatus.Unknow状态的话，会每5秒回查一次，直至消息状态为TransactionStatus.CommitTransaction或TransactionStatus.RollbackTransaction。
+当然OrderService类类的ProcessCore的参数类型是可以任意类型的的，因为基类使用的是泛型，返回类型必须是ONSTransactionResult类型。此ProcessCore方法是基类的抽象方法，因此必须override。如果此方法执行过程中出现异常，框架会将消息以TransactionStatus.Unknow状态提交，之后0~5秒内执行第一次回查（即调用Checker.check方法），之后还是TransactionStatus.Unknow状态的话，会每5秒回查一次，直至消息状态为TransactionStatus.CommitTransaction或TransactionStatus.RollbackTransaction。
 ```
-public class OrderService
+public class OrderService:BaseTransportProducerService<Order>
 {
-    [ONSProducer(ONSMessageTopic.ORDER_MSG, ONSMessageTag.ORDER_CREATED)]
-    public ONSTransactionResult Create(string orderInfoJson)
+    //需要指定构造函数，并把ONSMessageTopic和ONSMessageTag的枚举值给到基类去持久化为属性
+    public OrderService():base(ONSMessageTopic.ORDER_MSG, ONSMessageTag.ORDER_CREATED)
+    {
+    
+    }
+
+    //复写基类的抽象方法，在这个方法中写事务逻辑，此方法必须是幂等的
+    protected override ONSTransactionResult ProcessCore(Order orderInfoJson)
     {
         ...
         ...
@@ -140,12 +146,18 @@ public class OrderService
     }
 ```
 
-OrderReceiverService类的Receive方法需要加上[ONSConsumer]特性，用来设置消息的主题和标签。参数必须是string类型，它的内容实际就是TransactionResult实例的Data属性，返回类型必须使用bool类型。逻辑上执行没问题的话，返回true，如果逻辑上执行时遇到异常，或返回不是期待的结果，可以反回false，框架会按Action.ReconsumeLater状态提交消费状态，直至消费状态以Action.CommitMessage被提交。如果消费状态一直以Action.ReconsumeLater状态提交的话，消息中心会在4小时46分钟内一共发送16次重试消费，之后就不会再次发送了，具体重试的时间间隔见如下链接：https://help.aliyun.com/document_detail/43490.html。
+OrderReceiverService类的ProcessCore的参数类型是可以任意类型的的，因为基类使用的是泛型，它的内容实际就是TransactionResult实例的Data属性，返回类型必须使用bool类型，此ProcessCore方法是基类的抽象方法，因此必须override。逻辑上执行没问题的话，返回true，如果逻辑上执行时遇到异常，或返回不是期待的结果，可以反回false，框架会按Action.ReconsumeLater状态提交消费状态，直至消费状态以Action.CommitMessage被提交。如果消费状态一直以Action.ReconsumeLater状态提交的话，消息中心会在4小时46分钟内一共发送16次重试消费，之后就不会再次发送了，具体重试的时间间隔见如下链接：https://help.aliyun.com/document_detail/43490.html。
 ```
-public class OrderReceiverService
+public class OrderReceiverService: BaseConsumerService<Order>
 {
-    [ONSConsumer(ONSMessageTopic.ORDER_MSG, ONSMessageTag.ORDER_CREATED)]
-    public bool Receive(string data)
+    //需要指定构造函数，并把ONSMessageTopic和ONSMessageTag的枚举值给到基类去持久化为属性
+    public OrderReceiverService():base(ONSMessageTopic.ORDER_MSG, ONSMessageTag.ORDER_CREATED)
+    {
+    
+    }
+    
+    //复写基类的抽象方法，在这个方法中写事务逻辑，此方法必须是幂等的
+    protected override bool ProcessCore(Order data)
     {
         ...
         ...
