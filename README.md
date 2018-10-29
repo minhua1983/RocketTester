@@ -37,12 +37,11 @@ if(serviceResult.ReturnCode == 1)
     <!--ONS设置-->
     <add key="ONSRedisDBNumber" value="redis所用的数据库号码"/>
     <add key="ONSRedisTransactionResultExpireIn" value="存储ONSTransactionResult的超时时间（单位秒），如18000"/>
-    <add key="ONSTopic" value="消息的主题"/>
-    <add key="ONSProducerId" value="消息生产者唯一标识"/>
-    <add key="ONSConsumerId" value="消息消费者唯一标识"/>
     <add key="ONSAccessKey" value="RAM账号的AccessKey"/>
     <add key="ONSSecretKey" value="RAM账号的SecretKey"/>
-    <add key="ONSCheckerTest" value="是否启用checker测试模式，默认得用false"/>
+    <!--环境，p代表线上生产环境production，s代表线上测试环境staging，d代表本地开发环境development-->
+    <add key="Environment" value="s" />
+    <add key="ApplicationAlias" value="应用的别名" />
 ```
 
 接着需要在订单系统中的Global.asax.cs中加入如下代码
@@ -53,18 +52,18 @@ if(serviceResult.ReturnCode == 1)
         ...
         ...
         
-        //调用帮助类的初始化方法，它会以单例模式生成TransactionProducer实例和PushConsumer实例。
+        //初始化消息生产者和消息消费者对象
         ONSHelper.Initialize();
     }
     
     void Application_End(object sender, EventArgs e)
     {
-        //调用帮助类的销毁方法，它会销毁之前生成的那个TransactionProducer实例和PushConsumer实例。
+        //销毁消息生产者和消息消费者对象
         ONSHelper.Destroy();
     }
 ```
 
-现在有了阿里云RocketMQ的事物消息后，经过封装后，可以这样调用。
+现在有了阿里云RocketMQ的事务消息后，经过封装后，可以这样调用。
 ```
 //实例化Order对象
 Order order = new Order();
@@ -73,12 +72,12 @@ Order order = new Order();
 OrderService orderService = new OrderService();
 
 //创建订单，并获取结果
-ONSTransactionResult transactionResult = orderService.Create(order);
+ServiceResult serviceResult = orderService.Create(order);
 ```
 
-当然OrderService类类的ProcessCore的参数类型是可以任意类型的的，因为基类使用的是泛型，返回类型必须是ONSTransactionResult类型。此ProcessCore方法是基类的抽象方法，因此必须override。如果此方法执行过程中出现异常，框架会将消息以TransactionStatus.Unknow状态提交，之后0~5秒内执行第一次回查（即调用Checker.check方法），之后还是TransactionStatus.Unknow状态的话，会每5秒回查一次，直至消息状态为TransactionStatus.CommitTransaction或TransactionStatus.RollbackTransaction。
+当然OrderService类类的ProcessCore的参数类型是可以任意类型的的，因为基类使用的是泛型，返回类型必须是ServiceResult类型。此ProcessCore方法是基类的抽象方法，因此必须override。如果此方法执行过程中出现异常，框架会将消息以TransactionStatus.Unknow状态提交，之后0~5秒内执行第一次回查（即调用Checker.check方法），之后还是TransactionStatus.Unknow状态的话，会每5秒回查一次，直至消息状态为TransactionStatus.CommitTransaction或TransactionStatus.RollbackTransaction。
 ```
-public class OrderService:BaseTransportProducerService<Order>
+public class OrderService:AbstractTransportProducerService<Order>
 {
     //需要指定构造函数，并把ONSMessageTopic和ONSMessageTag的枚举值给到基类去持久化为属性
     public OrderService():base(ONSMessageTopic.ORDER_MSG, ONSMessageTag.ORDER_CREATED)
@@ -86,13 +85,13 @@ public class OrderService:BaseTransportProducerService<Order>
     
     }
 
-    //复写基类的抽象方法，在这个方法中写事务逻辑，此方法必须是幂等的
-    protected override ONSTransactionResult ProcessCore(Order orderInfoJson)
+    //复写基类的抽象方法，在这个方法中写事务逻辑，此方法必须是幂等的，因为在以重试执行该方法时是不存在HttpContext实例的
+    protected override ServiceResult ProcessCore(Order orderInfoJson)
     {
         ...
         ...
         ...
-        return new ONSTransactionResult()
+        return new ServiceResult()
         {
             //是否需要把消息推送到消息中心
             Pushable = true,
@@ -101,7 +100,10 @@ public class OrderService:BaseTransportProducerService<Order>
             Message = "创建订单执行成功",
             
             //要传递什么数据给到下游订阅者（建议使用json字符把当前对象的实例数据传递给到下游）
-            Data = data
+            Data = data,
+            
+            //这个参数可以不传递，它目前只用于分区顺序消息的Sharding Key的赋值
+            Parameter = null
         };
     }
     ...
@@ -119,12 +121,11 @@ public class OrderService:BaseTransportProducerService<Order>
     <!--ONS设置-->
     <add key="ONSRedisDBNumber" value="redis所用的数据库号码"/>
     <add key="ONSRedisTransactionResultExpireIn" value="存储TransactionResult的超时时间（单位秒），如18000"/>
-    <add key="ONSTopic" value="消息的主题"/>
-    <add key="ONSProducerId" value="消息生产者唯一标识"/>
-    <add key="ONSConsumerId" value="消息消费者唯一标识"/>
     <add key="ONSAccessKey" value="RAM账号的AccessKey"/>
     <add key="ONSSecretKey" value="RAM账号的SecretKey"/>
-    <add key="ONSCheckerTest" value="是否启用checker测试模式，默认得用false"/>
+    <!--环境，p代表线上生产环境production，s代表线上测试环境staging，d代表本地开发环境development-->
+    <add key="Environment" value="s" />
+    <add key="ApplicationAlias" value="应用的别名" />
 ```
 
 接着需要在订单系统中的Global.asax.cs中加入如下代码
@@ -135,28 +136,32 @@ public class OrderService:BaseTransportProducerService<Order>
         ...
         ...
         
-        //调用帮助类的初始化方法，它会以单例模式生成TransactionProducer实例和PushConsumer实例。
+        //初始化消息生产者和消息消费者对象
         ONSHelper.Initialize();
     }
     
     void Application_End(object sender, EventArgs e)
     {
-        //调用帮助类的销毁方法，它会销毁之前生成的那个TransactionProducer实例和PushConsumer实例。
+        //销毁消息生产者和消息消费者对象
         ONSHelper.Destroy();
     }
 ```
 
-OrderReceiverService类的ProcessCore的参数类型是可以任意类型的的，因为基类使用的是泛型，它的内容实际就是TransactionResult实例的Data属性，返回类型必须使用bool类型，此ProcessCore方法是基类的抽象方法，因此必须override。逻辑上执行没问题的话，返回true，如果逻辑上执行时遇到异常，或返回不是期待的结果，可以反回false，框架会按Action.ReconsumeLater状态提交消费状态，直至消费状态以Action.CommitMessage被提交。如果消费状态一直以Action.ReconsumeLater状态提交的话，消息中心会在4小时46分钟内一共发送16次重试消费，之后就不会再次发送了，具体重试的时间间隔见如下链接：https://help.aliyun.com/document_detail/43490.html。
+OrderReceiverService类的ProcessCore的参数类型是可以任意类型的的，因为基类使用的是泛型，它的内容实际就是ServiceResult实例的Data属性，返回类型必须使用bool类型，此ProcessCore方法是基类的抽象方法，因此必须override。逻辑上执行没问题的话，返回true，如果逻辑上执行时遇到异常，或返回不是期待的结果，可以反回false，框架会按Action.ReconsumeLater状态提交消费状态，直至消费状态以Action.CommitMessage被提交。如果消费状态一直以Action.ReconsumeLater状态提交的话，消息中心会在4小时46分钟内一共发送16次重试消费，之后就不会再次发送了，具体重试的时间间隔见如下链接：https://help.aliyun.com/document_detail/43490.html。
 ```
-public class OrderReceiverService: BaseConsumerService<Order>
+public class OrderReceiverService: AbstractConsumerService<Order>
 {
     //需要指定构造函数，并把ONSMessageTopic和ONSMessageTag的枚举值给到基类去持久化为属性
-    public OrderReceiverService():base(ONSMessageTopic.ORDER_MSG, ONSMessageTag.ORDER_CREATED)
+    public OrderReceiverService():base(new List<TopicTag>(){ 
+        new TopicTag() {
+            Topic = ONSMessageTopic.ORDER_MSG, Tag = ONSMessageTag.ORDER_CREATED
+        }
+    })
     {
     
     }
     
-    //复写基类的抽象方法，在这个方法中写事务逻辑，此方法必须是幂等的
+    //复写基类的抽象方法，在这个方法中写事务逻辑，此方法必须是幂等的，因为在以重试执行该方法时是不存在HttpContext实例的
     protected override bool ProcessCore(Order data)
     {
         ...
