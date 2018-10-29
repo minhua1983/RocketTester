@@ -80,7 +80,7 @@ ServiceResult serviceResult = orderService.Create(order);
 public class OrderService:AbstractTransportProducerService<Order>
 {
     //需要指定构造函数，并把ONSMessageTopic和ONSMessageTag的枚举值给到基类去持久化为属性
-    public OrderService():base(ONSMessageTopic.ORDER_MSG, ONSMessageTag.ORDER_CREATED)
+    public OrderService():base(new TopicTag() { Topic = ONSMessageTopic.ORDER_MSG, Tag = ONSMessageTag.ORDER_CREATED})
     {
     
     }
