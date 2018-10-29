@@ -10,6 +10,7 @@ namespace RocketTester.ONS.Service
 {
     public interface IAbstractProducerService<T>
     {
+        /*
         /// <summary>
         /// 服务对应的消息主题
         /// </summary>
@@ -19,6 +20,9 @@ namespace RocketTester.ONS.Service
         /// 服务对应的消息标签
         /// </summary>
         ONSMessageTag Tag { get; }
+        //*/
+
+        TopicTag TopicTag { get; }
 
         /// <summary>
         /// 服务的外部调用方法

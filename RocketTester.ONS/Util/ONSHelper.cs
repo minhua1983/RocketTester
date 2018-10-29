@@ -249,30 +249,35 @@ namespace RocketTester.ONS.Util
             {
                 ONSProducerServiceList.Add(type);
                 object service = assembly.CreateInstance(type.FullName);
-                string serviceTopic = type.GetProperty("Topic").GetValue(service).ToString();
-                string serviceTag = type.GetProperty("Tag").GetValue(service).ToString();
+                //string serviceTopic = type.GetProperty("Topic").GetValue(service).ToString();
+                //string serviceTag = type.GetProperty("Tag").GetValue(service).ToString();
 
-                string topic = (_Environment + "_" + serviceTopic).ToLower();
-                string producerId = ("PID_" + topic).ToUpper();
-                IONSProducer producer = ONSProducerList.Where(p => (p.Type == messageType.ToString()) && (p.ProducerId == producerId)).FirstOrDefault();
-                if (producer == null)
+                TopicTag topicTag = (TopicTag)type.GetProperty("TopicTag").GetValue(service);
+                if (topicTag != null)
                 {
-                    //实例化ONSFactoryProperty
-                    ONSFactoryProperty onsProducerFactoryProperty = new ONSFactoryProperty();
-                    onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.AccessKey, _ONSAccessKey);
-                    onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.SecretKey, _ONSSecretKey);
-                    onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.ProducerId, producerId);
-                    onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.PublishTopics, topic);
-                    //onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.LogPath, "D://log/rocketmq/producer");
+                    string serviceTopic = topicTag.Topic.ToString();
+                    string topic = (_Environment + "_" + serviceTopic).ToLower();
+                    string producerId = ("PID_" + topic).ToUpper();
+                    IONSProducer producer = ONSProducerList.Where(p => (p.Type == messageType.ToString()) && (p.ProducerId == producerId)).FirstOrDefault();
+                    if (producer == null)
+                    {
+                        //实例化ONSFactoryProperty
+                        ONSFactoryProperty onsProducerFactoryProperty = new ONSFactoryProperty();
+                        onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.AccessKey, _ONSAccessKey);
+                        onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.SecretKey, _ONSSecretKey);
+                        onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.ProducerId, producerId);
+                        onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.PublishTopics, topic);
+                        //onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.LogPath, "D://log/rocketmq/producer");
 
-                    //获取生产者IONSProducer
-                    producer = func(onsProducerFactoryProperty, topic, producerId);
+                        //获取生产者IONSProducer
+                        producer = func(onsProducerFactoryProperty, topic, producerId);
 
-                    //记录生产者初始化信息
-                    LogHelper.Log("Topic：" + topic + "，ProducerId（" + producer.Type.ToString() + "）：" + producer.ProducerId + "生产者new()");
+                        //记录生产者初始化信息
+                        LogHelper.Log("Topic：" + topic + "，ProducerId（" + producer.Type.ToString() + "）：" + producer.ProducerId + "生产者new()");
 
-                    //新增代理类ONSProducer实例到ONSProducerList中
-                    ONSProducerList.Add(producer);
+                        //新增代理类ONSProducer实例到ONSProducerList中
+                        ONSProducerList.Add(producer);
+                    }
                 }
             }
         }
@@ -287,39 +292,42 @@ namespace RocketTester.ONS.Util
                 //string serviceTag = type.GetProperty("Tag").GetValue(service).ToString();
 
                 List<TopicTag> topicTagList = (List<TopicTag>)type.GetProperty("TopicTagList").GetValue(service);
-                foreach(TopicTag topicTag in topicTagList)
+                if (topicTagList != null && topicTagList.Count > 0)
                 {
-                    string serviceTopic = topicTag.Topic.ToString();
-                    string serviceTag = topicTag.Tag.ToString();
-                
-
-                    string topic = (_Environment + "_" + serviceTopic).ToLower();
-                    string consumerId = ("CID_" + topic + "_" + _ApplicationAlias).ToUpper();
-
-                    IONSConsumer consumer = ONSConsumerList.Where(c => c.Type == messageType.ToString() && c.ConsumerId == consumerId).FirstOrDefault();
-                    if (consumer == null)
+                    foreach (TopicTag topicTag in topicTagList)
                     {
-                        //实例化ONSFactoryProperty
-                        ONSFactoryProperty onsConsumerFactoryProperty = new ONSFactoryProperty();
-                        onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.AccessKey, _ONSAccessKey);
-                        onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.SecretKey, _ONSSecretKey);
-                        onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.ConsumerId, consumerId);
-                        //onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.PublishTopics, _ONSTopic);
-                        //onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.LogPath, "D://log/rocketmq/consumer");
+                        string serviceTopic = topicTag.Topic.ToString();
+                        string serviceTag = topicTag.Tag.ToString();
 
-                        //获取消费者IONSConsumer
-                        consumer = func(onsConsumerFactoryProperty, topic, consumerId);
 
-                        //记录消费者初始化信息
-                        LogHelper.Log("Topic：" + topic + "，ConsumerId（" + consumer.Type + "）：" + consumer.ConsumerId + "消费者.new()");
+                        string topic = (_Environment + "_" + serviceTopic).ToLower();
+                        string consumerId = ("CID_" + topic + "_" + _ApplicationAlias).ToUpper();
 
-                        //新增代理类ONSConsumer实例到ONSConsumerList中
-                        ONSConsumerList.Add(consumer);
-                    }
+                        IONSConsumer consumer = ONSConsumerList.Where(c => c.Type == messageType.ToString() && c.ConsumerId == consumerId).FirstOrDefault();
+                        if (consumer == null)
+                        {
+                            //实例化ONSFactoryProperty
+                            ONSFactoryProperty onsConsumerFactoryProperty = new ONSFactoryProperty();
+                            onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.AccessKey, _ONSAccessKey);
+                            onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.SecretKey, _ONSSecretKey);
+                            onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.ConsumerId, consumerId);
+                            //onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.PublishTopics, _ONSTopic);
+                            //onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.LogPath, "D://log/rocketmq/consumer");
 
-                    if (!consumer.TagList.Contains(serviceTag))
-                    {
-                        consumer.TagList.Add(serviceTag);
+                            //获取消费者IONSConsumer
+                            consumer = func(onsConsumerFactoryProperty, topic, consumerId);
+
+                            //记录消费者初始化信息
+                            LogHelper.Log("Topic：" + topic + "，ConsumerId（" + consumer.Type + "）：" + consumer.ConsumerId + "消费者.new()");
+
+                            //新增代理类ONSConsumer实例到ONSConsumerList中
+                            ONSConsumerList.Add(consumer);
+                        }
+
+                        if (!consumer.TagList.Contains(serviceTag))
+                        {
+                            consumer.TagList.Add(serviceTag);
+                        }
                     }
                 }
             }

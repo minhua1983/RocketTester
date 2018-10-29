@@ -18,9 +18,6 @@ namespace RocketTester.ONS.Service
 {
     public abstract class AbstractTransactionProducerService<T> : IAbstractProducerService<T>
     {
-        public ONSMessageTopic Topic { get; private set; }
-        public ONSMessageTag Tag { get; private set; }
-
         //redis地址
         static string _RedisExchangeHosts = ConfigurationManager.AppSettings["RedisExchangeHosts"] ?? "";
         //启用redis第N个数据库
@@ -29,10 +26,21 @@ namespace RocketTester.ONS.Service
         static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "p";
         static string _ApplicationAlias = ConfigurationManager.AppSettings["ApplicationAlias"] ?? "unknown";
 
+        /*
+        public ONSMessageTopic Topic { get; private set; }
+        public ONSMessageTag Tag { get; private set; }
+
         public AbstractTransactionProducerService(ONSMessageTopic topic, ONSMessageTag tag)
         {
             Topic = topic;
             Tag = tag;
+        }
+        //*/
+
+        public TopicTag TopicTag { get; private set; }
+        public AbstractTransactionProducerService(TopicTag topicTag)
+        {
+            TopicTag = topicTag;
         }
 
         /*不建议在静态构造中初始化生产者和消费者，因为你不能保证他在global.appaction_start之后执行，正犹豫这个原因可能导致rocketmq内部错误。
@@ -69,18 +77,18 @@ namespace RocketTester.ONS.Service
         /// <returns>事务执行结果</returns>
         public ServiceResult Process(T model)
         {
-            string key = _Environment + "_" + _ApplicationAlias + ":" + _Environment + "_" + Topic.ToString().ToLower() + ":" + Tag.ToString() + ":" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ":" + Guid.NewGuid().ToString();
+            string key = _Environment + "_" + _ApplicationAlias + ":" + _Environment + "_" + TopicTag.Topic.ToString().ToLower() + ":" + TopicTag.Tag.ToString() + ":" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ":" + Guid.NewGuid().ToString();
             string shardingKey = "";
 
             //body不能为空，否则要报错，Func<string,TransactionResult>对应方法中，lambda什么的错误，实际根本没错，就是Message实体的body为空
-            Message message = new Message(_Environment + "_" + Topic.ToString().ToLower(), Tag.ToString(), "no content");
+            Message message = new Message(_Environment + "_" + TopicTag.Topic.ToString().ToLower(), TopicTag.Tag.ToString(), "no content");
             //设置key作为自定义的消息唯一标识，不能用ONS消息自带的MsgId作为消息的唯一标识，因为它不保证一定不出现重复。
             message.setKey(key);
             message.putUserProperties("type", ONSMessageType.TRAN.ToString());
             message.putUserProperties("shardingKey", shardingKey);
 
-            LogHelper.Log("topic " + Topic);
-            LogHelper.Log("tag " + Tag);
+            LogHelper.Log("topic " + TopicTag.Topic);
+            LogHelper.Log("tag " + TopicTag.Tag);
 
             //Func<T, ONSTransactionResult> func = this.InternalProduce;
             MethodInfo methodInfo = this.GetType().GetMethod("InternalProcess", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -119,7 +127,7 @@ namespace RocketTester.ONS.Service
 
             LogHelper.Log("get ready to send message...");
 
-            string topic = (_Environment + "_" + Topic).ToLower();
+            string topic = (_Environment + "_" + TopicTag.Topic).ToLower();
             string producerId = ("PID_" + topic).ToUpper();
 
             //生成半消息，并调用LocalTransactionExecuter对象的execute方法，它内部会执行委托实例（同时会将执行后的TransactionResult以Message的key为redis的key存入redis中），根据执行结果再决定是否要将消息状态设置为rollback或commit

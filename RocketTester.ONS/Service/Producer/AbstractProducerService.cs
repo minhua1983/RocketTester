@@ -16,9 +16,6 @@ namespace RocketTester.ONS.Service
 {
     public abstract class AbstractProducerService<T> : IAbstractProducerService<T>
     {
-        public ONSMessageTopic Topic { get; private set; }
-        public ONSMessageTag Tag { get; private set; }
-
         //redis地址
         static string _RedisExchangeHosts = ConfigurationManager.AppSettings["RedisExchangeHosts"] ?? "";
         //启用redis第N个数据库
@@ -29,11 +26,23 @@ namespace RocketTester.ONS.Service
         static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "p";
         static string _ApplicationAlias = ConfigurationManager.AppSettings["ApplicationAlias"] ?? "unknown";
 
+        /*
+        public ONSMessageTopic Topic { get; private set; }
+        public ONSMessageTag Tag { get; private set; }
+
         public AbstractProducerService(ONSMessageTopic topic, ONSMessageTag tag)
         {
             Topic = topic;
             Tag = tag;
         }
+        //*/
+
+        public TopicTag TopicTag { get; private set; }
+        public AbstractProducerService(TopicTag topicTag)
+        {
+            TopicTag = topicTag;
+        }
+
 
         /// <summary>
         /// ProcessCore抽象方法，主要用于派生类重写它逻辑，即上游生产者事务方法。
@@ -64,10 +73,10 @@ namespace RocketTester.ONS.Service
         {
             ServiceResult serviceResult = InternalProcess(model);
 
-            string topic = (_Environment + "_" + Topic).ToLower();
-            string tag = Tag.ToString();
+            string topic = (_Environment + "_" + TopicTag.Topic).ToLower();
+            string tag = TopicTag.Tag.ToString();
             string pid = ("PID_" + topic).ToUpper();
-            string key = _Environment + "_" + _ApplicationAlias + ":" + _Environment + "_" + Topic.ToString().ToLower() + ":" + Tag.ToString() + ":" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ":" + Guid.NewGuid().ToString();
+            string key = _Environment + "_" + _ApplicationAlias + ":" + _Environment + "_" + TopicTag.Topic.ToString().ToLower() + ":" + TopicTag.Tag.ToString() + ":" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ":" + Guid.NewGuid().ToString();
             string data = JsonConvert.SerializeObject(serviceResult.Data);
             string body = "no content";
             string method = this.GetType().FullName + ".ProcessCore";
