@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace RocketTester.ONS.Enum
 {
     /// <summary>
-    /// 消息标签的枚举，此枚举中的值必须由框架维护
+    /// 消息标签的枚举，此枚举中的值必须由框架维护，它的值必须全大写
     /// </summary>
     public enum ONSMessageTag
     {
@@ -24,6 +24,6 @@ namespace RocketTester.ONS.Enum
         /// <summary>
         /// 用户资料同步
         /// </summary>
-        USER_SYNCHRONIZED
+        USER_SYNCHRONIZED,
     }
 }

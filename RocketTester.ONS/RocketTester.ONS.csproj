@@ -48,6 +48,9 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Nest.Framework">
+      <HintPath>..\refdll\Nest.Framework.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.6.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -69,15 +72,19 @@
   <ItemGroup>
     <Compile Include="Enum\ONSMessageTag.cs" />
     <Compile Include="Enum\ONSMessageTopic.cs" />
-    <Compile Include="Service\BaseConsumerService.cs" />
-    <Compile Include="Service\BaseTransactionProducerService.cs" />
-    <Compile Include="Util\ONSMessageListener.cs" />
-    <Compile Include="Util\ONSLocalTransactionChecker.cs" />
-    <Compile Include="Util\ONSLocalTransactionExecuter.cs" />
-    <Compile Include="Model\ONSTransactionResult.cs" />
+    <Compile Include="Model\Data\ConsumeData.cs" />
+    <Compile Include="Model\Consumer\IONSConsumer.cs" />
+    <Compile Include="Model\Consumer\ONSConsumer.cs" />
+    <Compile Include="Model\Consumer\ONSOrderConsumer.cs" />
+    <Compile Include="Model\Consumer\ONSTransactionConsumer.cs" />
+    <Compile Include="Model\Listener\ONSMessageOrderListener.cs" />
+    <Compile Include="Model\Data\ProduceData.cs" />
+    <Compile Include="Model\Producer\ONSProducer.cs" />
+    <Compile Include="Model\TopicTag.cs" />
     <Compile Include="SDK\Action.cs" />
     <Compile Include="SDK\ConsumeContext.cs" />
     <Compile Include="SDK\ConsumeOrderContext.cs" />
+    <Compile Include="SDK\ConsumerAndProducerForEx.cs" />
     <Compile Include="SDK\LocalTransactionChecker.cs" />
     <Compile Include="SDK\LocalTransactionExecuter.cs" />
     <Compile Include="SDK\Message.cs" />
@@ -96,7 +103,6 @@
     <Compile Include="SDK\OrderConsumer.cs" />
     <Compile Include="SDK\OrderProducer.cs" />
     <Compile Include="SDK\Producer.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SDK\PullConsumer.cs" />
     <Compile Include="SDK\PullResultONS.cs" />
     <Compile Include="SDK\PushConsumer.cs" />
@@ -132,13 +138,25 @@
     <Compile Include="SDK\SystemPropKey.cs" />
     <Compile Include="SDK\TransactionProducer.cs" />
     <Compile Include="SDK\TransactionStatus.cs" />
+    <Compile Include="Service\Consumer\AbstractConsumerService.cs" />
+    <Compile Include="Service\Consumer\AbstractOrderConsumerService.cs" />
+    <Compile Include="Service\Consumer\AbstractTransactionConsumerService.cs" />
+    <Compile Include="Service\Consumer\IAbstractConsumerService.cs" />
+    <Compile Include="Service\Producer\AbstractProducerService.cs" />
+    <Compile Include="Service\Producer\AbstractOrderProducerService.cs" />
+    <Compile Include="Service\Producer\AbstractTransactionProducerService.cs" />
+    <Compile Include="Model\Producer\IONSProducer.cs" />
+    <Compile Include="Model\Listener\ONSMessageListener.cs" />
+    <Compile Include="Model\ONSLocalTransactionChecker.cs" />
+    <Compile Include="Model\ONSLocalTransactionExecuter.cs" />
+    <Compile Include="Model\ServiceResult.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Service\Producer\IAbstractProducerService.cs" />
     <Compile Include="Util\ONSHelper.cs" />
     <Compile Include="Util\LogHelper.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="ONSClient4CPP.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <Compile Include="Model\Producer\ONSOrderProducer.cs" />
+    <Compile Include="Enum\ONSMessageType.cs" />
+    <Compile Include="Model\Producer\ONSTransactionProducer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ONSClient4CPP.exp">
@@ -150,6 +168,11 @@
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ONSClient4CPP.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

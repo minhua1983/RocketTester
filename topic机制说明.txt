@@ -1,0 +1,9 @@
+最开始topic是所有网站都用一个统一的topic，只实例化一个TransactionProducer。
+
+后来topic是按网站区分的，是一个网站只可以以一个topic为生产者，即只实例化一个TransactionProducer。
+
+目前topic按业务区分的，即一个网站可以以多个topic为生产者，即实例化多个TransactionProducer。
+
+目前的问题，由于一个网站可以存在多个topic，且每个topic不得被其他网站所用（如果多个网站公用一个topic会导致check紊乱的情况），而目前这样导致topic过多，费用剧增
+
+在目前的情况下是否需要实现，一个下游的方法，是否需要同时监听不同的上游topic和tag，举个例子：每个网站都要发送邮件，都要写es日志，那么我现在最好是可以实现多个不同的topic和tag都统一被下游网站的某一个服务类来处理。

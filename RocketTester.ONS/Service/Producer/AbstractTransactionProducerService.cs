@@ -16,7 +16,7 @@ using Newtonsoft.Json;
 
 namespace RocketTester.ONS.Service
 {
-    public abstract class BaseTransactionProducerService<T>
+    public abstract class AbstractTransactionProducerService<T> : IAbstractProducerService<T>
     {
         public ONSMessageTopic Topic { get; private set; }
         public ONSMessageTag Tag { get; private set; }
@@ -27,8 +27,9 @@ namespace RocketTester.ONS.Service
         static int _ONSRedisDBNumber = string.IsNullOrEmpty(ConfigurationManager.AppSettings["ONSRedisDBNumber"]) ? 11 : int.Parse(ConfigurationManager.AppSettings["ONSRedisDBNumber"]);
         //获取当前环境，p代表生产环境production，s代表测试环境staging，d代表开发环境development
         static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "p";
+        static string _ApplicationAlias = ConfigurationManager.AppSettings["ApplicationAlias"] ?? "unknown";
 
-        public BaseTransactionProducerService(ONSMessageTopic topic, ONSMessageTag tag)
+        public AbstractTransactionProducerService(ONSMessageTopic topic, ONSMessageTag tag)
         {
             Topic = topic;
             Tag = tag;
@@ -42,38 +43,41 @@ namespace RocketTester.ONS.Service
         //*/
 
         /// <summary>
-        /// Transact抽象方法，主要用于派生类重写它逻辑，即上游生产者事务方法。
+        /// ProcessCore抽象方法，主要用于派生类重写它逻辑，即上游生产者事务方法。
         /// </summary>
         /// <param name="model">接收的参数</param>
         /// <returns>事务执行结果</returns>
-        protected abstract ONSTransactionResult ProcessCore(T model);
+        protected abstract ServiceResult ProcessCore(T model);
 
         /// <summary>
         /// 通过反射调用
         /// </summary>
         /// <param name="model">接收的参数</param>
         /// <returns>事务执行结果</returns>
-        protected ONSTransactionResult InternalProcess(T model)
+        protected ServiceResult InternalProcess(T model)
         {
             //此处预留可以做干预
-            ONSTransactionResult result = ProcessCore(model);
+            ServiceResult result = ProcessCore(model);
             //此处预留可以做干预
             return result;
         }
 
         /// <summary>
-        /// 上游生产者的实现rocketmq的核心方法，其中会由rocketmq自动间接调用BaseTransactionProducerService实例的InternalProduce方法
+        /// 上游生产者的实现rocketmq的核心方法，其中会由rocketmq自动间接调用AbstractTransactionProducerService实例的InternalProduce方法
         /// </summary>
         /// <param name="model">接收的参数</param>
         /// <returns>事务执行结果</returns>
-        public ONSTransactionResult Process(T model)
+        public ServiceResult Process(T model)
         {
+            string key = _Environment + "_" + _ApplicationAlias + ":" + _Environment + "_" + Topic.ToString().ToLower() + ":" + Tag.ToString() + ":" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ":" + Guid.NewGuid().ToString();
+            string shardingKey = "";
+
             //body不能为空，否则要报错，Func<string,TransactionResult>对应方法中，lambda什么的错误，实际根本没错，就是Message实体的body为空
             Message message = new Message(_Environment + "_" + Topic.ToString().ToLower(), Tag.ToString(), "no content");
-            string key = _Environment + "_" + Topic.ToString().ToLower() + "_" + Tag.ToString() + "_" + Guid.NewGuid().ToString();
-
             //设置key作为自定义的消息唯一标识，不能用ONS消息自带的MsgId作为消息的唯一标识，因为它不保证一定不出现重复。
             message.setKey(key);
+            message.putUserProperties("type", ONSMessageType.TRAN.ToString());
+            message.putUserProperties("shardingKey", shardingKey);
 
             LogHelper.Log("topic " + Topic);
             LogHelper.Log("tag " + Tag);
@@ -115,9 +119,12 @@ namespace RocketTester.ONS.Service
 
             LogHelper.Log("get ready to send message...");
 
-            //生成半消息，并调用LocalTransactionExecuter对象的execute方法，它内部会执行委托实例（同时会将执行后的TransactionResult以Message的key为redis的key存入redis中），根据执行结果再决定是否要将消息状态设置为rollback或commit
-            SendResultONS sendResultONS = ONSHelper.TransactionProducer.send(message, executer);
+            string topic = (_Environment + "_" + Topic).ToLower();
+            string producerId = ("PID_" + topic).ToUpper();
 
+            //生成半消息，并调用LocalTransactionExecuter对象的execute方法，它内部会执行委托实例（同时会将执行后的TransactionResult以Message的key为redis的key存入redis中），根据执行结果再决定是否要将消息状态设置为rollback或commit
+            IONSProducer transactionProducer = ONSHelper.ONSProducerList.Where(producer => (producer.Type == ONSMessageType.TRAN.ToString().ToUpper()) && (producer.ProducerId == producerId)).FirstOrDefault();
+            SendResultONS sendResultONS = transactionProducer.send(message, executer);
             LogHelper.Log("key " + key);
 
             //实例化redis工具
@@ -129,7 +136,7 @@ namespace RocketTester.ONS.Service
             LogHelper.Log("");
 
             //反序列化获取到一个TransactionResult对象
-            return JsonConvert.DeserializeObject<ONSTransactionResult>(result);
+            return JsonConvert.DeserializeObject<ServiceResult>(result);
         }
 
 

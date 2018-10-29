@@ -9,15 +9,24 @@ using RocketTester.ONS.Model;
 
 namespace RocketTester.ONS.Service
 {
-    public abstract class BaseConsumerService<T>
+    public abstract class AbstractOrderConsumerService<T> : IAbstractConsumerService
     {
+        /*
         public ONSMessageTopic Topic { get; private set; }
         public ONSMessageTag Tag { get; private set; }
 
-        public BaseConsumerService(ONSMessageTopic topic, ONSMessageTag tag)
+        public AbstractOrderConsumerService(ONSMessageTopic topic, ONSMessageTag tag)
         {
             Topic = topic;
             Tag = tag;
+        }
+        //*/
+
+        public List<TopicTag> TopicTagList { get; private set; }
+
+        public AbstractOrderConsumerService(List<TopicTag> topicTagList)
+        {
+            TopicTagList = topicTagList;
         }
 
         /// <summary>
