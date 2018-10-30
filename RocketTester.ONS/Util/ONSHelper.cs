@@ -178,14 +178,14 @@ namespace RocketTester.ONS
                                 if (type.BaseType.FullName != null)
                                 {
                                     //获取当前应用作为"事务"类型生产者的相关信息
-                                    CreateProducer<AbstractTransactionProducerService<string>>(assembly, type, ONSMessageType.TRAN, (onsProducerFactoryProperty, topic, producerId) =>
+                                    CreateProducer<AbstractTranProducerService<string>>(assembly, type, ONSMessageType.TRAN, (onsProducerFactoryProperty, topic, producerId) =>
                                     {
                                         //实例化ONSLocalTransactionChecker
                                         ONSLocalTransactionChecker checker = new ONSLocalTransactionChecker();
                                         //实例化TransactionProducer
                                         TransactionProducer transactionProducer = ONSFactory.getInstance().createTransactionProducer(onsProducerFactoryProperty, checker);
                                         //实例化代理类ONSTransactionProducer
-                                        return new ONSTransactionProducer(topic, producerId, transactionProducer);
+                                        return new ONSTranProducer(topic, producerId, transactionProducer);
                                     });
 
                                     //获取当前应用作为"顺序"类型生产者的相关信息
@@ -198,39 +198,39 @@ namespace RocketTester.ONS
                                     });
 
                                     //获取当前应用作为"普通"类型生产者的相关信息
-                                    CreateProducer<AbstractProducerService<string>>(assembly, type, ONSMessageType.BASE, (onsProducerFactoryProperty, topic, producerId) =>
+                                    CreateProducer<AbstractBaseProducerService<string>>(assembly, type, ONSMessageType.BASE, (onsProducerFactoryProperty, topic, producerId) =>
                                     {
                                         //实例化Producer
                                         Producer baseProducer = ONSFactory.getInstance().createProducer(onsProducerFactoryProperty);
                                         //实例化代理类ONSProducer
-                                        return new ONSProducer(topic, producerId, baseProducer);
+                                        return new ONSBaseProducer(topic, producerId, baseProducer);
                                     });
 
                                     //获取当前应用作为"事务"类型消费者的相关信息
-                                    CreateConsumer<AbstractTransactionConsumerService<string>>(assembly, type, ONSMessageType.TRAN, (onsConsumerFactoryProperty, topic, consumerId) =>
+                                    CreateConsumer<AbstractTranConsumerService<string>>(assembly, type, ONSMessageType.TRAN, (onsConsumerFactoryProperty, topic, consumerId) =>
                                     {
                                         //实例化PushConsumer
                                         PushConsumer pushConsumer = ONSFactory.getInstance().createPushConsumer(onsConsumerFactoryProperty);
                                         //实例化代理类ONSTransactionConsumer
-                                        return new ONSTransactionConsumer(topic, consumerId, pushConsumer);
+                                        return new ONSTranConsumer(topic, consumerId, pushConsumer);
                                     });
 
                                     //获取当前应用作为"顺序"类型消费者的相关信息
                                     CreateConsumer<AbstractOrderConsumerService<string>>(assembly, type, ONSMessageType.ORDER, (onsConsumerFactoryProperty, topic, consumerId) =>
                                     {
-                                        //实例化PushConsumer
+                                        //实例化OrderConsumer
                                         OrderConsumer orderConsumer = ONSFactory.getInstance().createOrderConsumer(onsConsumerFactoryProperty);
                                         //实例化代理类ONSOrderConsumer
                                         return new ONSOrderConsumer(topic, consumerId, orderConsumer);
                                     });
 
                                     //获取当前应用作为"普通"类型消费者的相关信息
-                                    CreateConsumer<AbstractConsumerService<string>>(assembly, type, ONSMessageType.BASE, (onsConsumerFactoryProperty, topic, consumerId) =>
+                                    CreateConsumer<AbstractBaseConsumerService<string>>(assembly, type, ONSMessageType.BASE, (onsConsumerFactoryProperty, topic, consumerId) =>
                                     {
                                         //实例化PushConsumer
                                         PushConsumer pushConsumer = ONSFactory.getInstance().createPushConsumer(onsConsumerFactoryProperty);
                                         //实例化代理类ONSTransactionConsumer
-                                        return new ONSConsumer(topic, consumerId, pushConsumer);
+                                        return new ONSBaseConsumer(topic, consumerId, pushConsumer);
                                     });
                                 }
                             }
@@ -245,15 +245,12 @@ namespace RocketTester.ONS
             if (type.BaseType.FullName.IndexOf(typeof(T).Name) >= 0)
             {
                 ONSProducerServiceList.Add(type);
-                object service = assembly.CreateInstance(type.FullName);
-                //string serviceTopic = type.GetProperty("Topic").GetValue(service).ToString();
-                //string serviceTag = type.GetProperty("Tag").GetValue(service).ToString();
-
-                Enum topicTag = (Enum)type.GetProperty("TopicTag").GetValue(service);
+                AbstractProducerService service = (AbstractProducerService)assembly.CreateInstance(type.FullName);
+                Enum topicTag = service.TopicTag;
                 if (topicTag != null)
                 {
                     string serviceTopic = topicTag.GetType().Name;
-                    string topic = (_Environment + "_" + serviceTopic).ToLower();
+                    string topic = (_Environment + "_" + serviceTopic).ToUpper();
                     string producerId = ("PID_" + topic).ToUpper();
                     IONSProducer producer = ONSProducerList.Where(p => (p.Type == messageType.ToString()) && (p.ProducerId == producerId)).FirstOrDefault();
                     if (producer == null)
@@ -284,11 +281,8 @@ namespace RocketTester.ONS
             if (type.BaseType.FullName.IndexOf(typeof(T).Name) >= 0)
             {
                 ONSConsumerServiceList.Add(type);
-                object service = assembly.CreateInstance(type.FullName);
-                //string serviceTopic = type.GetProperty("Topic").GetValue(service).ToString();
-                //string serviceTag = type.GetProperty("Tag").GetValue(service).ToString();
-
-                Enum[] topicTagList = (Enum[])type.GetProperty("TopicTagList").GetValue(service);
+                AbstractConsumerService service = (AbstractConsumerService)assembly.CreateInstance(type.FullName);
+                Enum[] topicTagList = service.TopicTagList;
                 if (topicTagList != null && topicTagList.Length > 0)
                 {
                     foreach (Enum topicTag in topicTagList)
@@ -297,7 +291,7 @@ namespace RocketTester.ONS
                         string serviceTag = topicTag.ToString();
 
 
-                        string topic = (_Environment + "_" + serviceTopic).ToLower();
+                        string topic = (_Environment + "_" + serviceTopic).ToUpper();
                         string consumerId = ("CID_" + topic + "_" + _ApplicationAlias).ToUpper();
 
                         IONSConsumer consumer = ONSConsumerList.Where(c => c.Type == messageType.ToString() && c.ConsumerId == consumerId).FirstOrDefault();

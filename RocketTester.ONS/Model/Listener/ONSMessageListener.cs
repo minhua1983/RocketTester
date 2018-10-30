@@ -90,9 +90,9 @@ namespace RocketTester.ONS
                     {
                         //需要同时判断topic和tag都匹配
                         topicTag = topicTagList.Where(tt => {
-                            string serviceTopic = (_Environment + "_" + tt.GetType().Name).ToLower();
+                            string serviceTopic = (_Environment + "_" + tt.GetType().Name).ToUpper();
                             string serviceTag = tt.ToString();
-                            return (topic.ToLower() == serviceTopic) && (tag.ToLower() == serviceTag.ToLower());
+                            return (topic.ToUpper() == serviceTopic) && (tag.ToUpper() == serviceTag.ToUpper());
                         }).FirstOrDefault();
 
                         if (topicTag != null)

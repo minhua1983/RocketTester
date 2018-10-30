@@ -8,7 +8,7 @@ using ons;
 
 namespace RocketTester.ONS
 {
-    public class ONSTransactionConsumer : IONSConsumer
+    public class ONSTranConsumer : IONSConsumer
     {
         /// <summary>
         /// 自定义属性TagList
@@ -32,7 +32,7 @@ namespace RocketTester.ONS
 
         PushConsumer _consumer;
 
-        public ONSTransactionConsumer(string topic, string consumerId, PushConsumer consumer)
+        public ONSTranConsumer(string topic, string consumerId, PushConsumer consumer)
         {
             Type = ONSMessageType.TRAN.ToString();
             Topic = topic;

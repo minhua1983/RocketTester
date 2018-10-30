@@ -13,7 +13,7 @@ using Newtonsoft.Json;
 
 namespace RocketTester.ONS
 {
-    public abstract class AbstractTransactionProducerService<T> : IAbstractProducerService<T>
+    public abstract class AbstractTranProducerService<T> : AbstractProducerService, IAbstractProducerService<T>
     {
         //redis地址
         static string _RedisExchangeHosts = ConfigurationManager.AppSettings["RedisExchangeHosts"] ?? "";
@@ -23,19 +23,7 @@ namespace RocketTester.ONS
         static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "p";
         static string _ApplicationAlias = ConfigurationManager.AppSettings["ApplicationAlias"] ?? "unknown";
 
-        /*
-        public ONSMessageTopic Topic { get; private set; }
-        public ONSMessageTag Tag { get; private set; }
-
-        public AbstractTransactionProducerService(ONSMessageTopic topic, ONSMessageTag tag)
-        {
-            Topic = topic;
-            Tag = tag;
-        }
-        //*/
-
-        public Enum TopicTag { get; private set; }
-        public AbstractTransactionProducerService(Enum topicTag)
+        public AbstractTranProducerService(Enum topicTag)
         {
             TopicTag = topicTag;
         }
@@ -74,7 +62,7 @@ namespace RocketTester.ONS
         /// <returns>事务执行结果</returns>
         public ServiceResult Process(T model)
         {
-            string topic = _Environment + "_" + TopicTag.GetType().Name.ToLower();
+            string topic = (_Environment + "_" + TopicTag.GetType().Name).ToUpper();
             string tag = TopicTag.ToString();
             string key = _Environment + "_" + _ApplicationAlias + ":" + topic + ":" + tag + ":" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ":" + Guid.NewGuid().ToString();
             string shardingKey = "";

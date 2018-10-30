@@ -8,8 +8,6 @@ namespace RocketTester.ONS
 {
     public interface IAbstractProducerService<T>
     {
-        Enum TopicTag { get; }
-
         /// <summary>
         /// 服务的外部调用方法
         /// </summary>

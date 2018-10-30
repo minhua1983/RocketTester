@@ -8,6 +8,6 @@ namespace RocketTester.ONS
 {
     public interface IAbstractConsumerService
     {
-        Enum[] TopicTagList { get; }
+        
     }
 }

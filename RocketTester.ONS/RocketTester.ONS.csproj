@@ -76,12 +76,12 @@
     <Compile Include="Enum\Topic\Tester\TRAN_TESTER1.cs" />
     <Compile Include="Model\Data\ConsumeData.cs" />
     <Compile Include="Model\Consumer\IONSConsumer.cs" />
-    <Compile Include="Model\Consumer\ONSConsumer.cs" />
+    <Compile Include="Model\Consumer\ONSBaseConsumer.cs" />
     <Compile Include="Model\Consumer\ONSOrderConsumer.cs" />
-    <Compile Include="Model\Consumer\ONSTransactionConsumer.cs" />
+    <Compile Include="Model\Consumer\ONSTranConsumer.cs" />
     <Compile Include="Model\Listener\ONSMessageOrderListener.cs" />
     <Compile Include="Model\Data\ProduceData.cs" />
-    <Compile Include="Model\Producer\ONSProducer.cs" />
+    <Compile Include="Model\Producer\ONSBaseProducer.cs" />
     <Compile Include="SDK\Action.cs" />
     <Compile Include="SDK\ConsumeContext.cs" />
     <Compile Include="SDK\ConsumeOrderContext.cs" />
@@ -139,13 +139,14 @@
     <Compile Include="SDK\SystemPropKey.cs" />
     <Compile Include="SDK\TransactionProducer.cs" />
     <Compile Include="SDK\TransactionStatus.cs" />
+    <Compile Include="Service\Consumer\AbstractBaseConsumerService.cs" />
     <Compile Include="Service\Consumer\AbstractConsumerService.cs" />
     <Compile Include="Service\Consumer\AbstractOrderConsumerService.cs" />
-    <Compile Include="Service\Consumer\AbstractTransactionConsumerService.cs" />
-    <Compile Include="Service\Consumer\IAbstractConsumerService.cs" />
-    <Compile Include="Service\Producer\AbstractProducerService.cs" />
+    <Compile Include="Service\Consumer\AbstractTranConsumerService.cs" />
+    <Compile Include="Service\Producer\AbstractBaseProducerService.cs" />
     <Compile Include="Service\Producer\AbstractOrderProducerService.cs" />
-    <Compile Include="Service\Producer\AbstractTransactionProducerService.cs" />
+    <Compile Include="Service\Producer\AbstractProducerService.cs" />
+    <Compile Include="Service\Producer\AbstractTranProducerService.cs" />
     <Compile Include="Model\Producer\IONSProducer.cs" />
     <Compile Include="Model\Listener\ONSMessageListener.cs" />
     <Compile Include="Model\ONSLocalTransactionChecker.cs" />
@@ -157,7 +158,7 @@
     <Compile Include="Util\LogHelper.cs" />
     <Compile Include="Model\Producer\ONSOrderProducer.cs" />
     <Compile Include="Enum\ONSMessageType.cs" />
-    <Compile Include="Model\Producer\ONSTransactionProducer.cs" />
+    <Compile Include="Model\Producer\ONSTranProducer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ONSClient4CPP.exp">

@@ -7,11 +7,9 @@ using Newtonsoft.Json;
 
 namespace RocketTester.ONS
 {
-    public abstract class AbstractTransactionConsumerService<T> : IAbstractConsumerService
+    public abstract class AbstractTranConsumerService<T> : AbstractConsumerService
     {
-        public Enum[] TopicTagList { get; private set; }
-
-        public AbstractTransactionConsumerService(params Enum[] topicTagList)
+        public AbstractTranConsumerService(params Enum[] topicTagList)
         {
             TopicTagList = topicTagList;
         }

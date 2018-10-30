@@ -11,7 +11,7 @@ using Nest.Framework;
 
 namespace RocketTester.ONS
 {
-    public abstract class AbstractOrderProducerService<T> : AbstractProducerService, IAbstractProducerService<T>
+    public abstract class AbstractBaseProducerService<T> :AbstractProducerService, IAbstractProducerService<T>
     {
         //redis地址
         static string _RedisExchangeHosts = ConfigurationManager.AppSettings["RedisExchangeHosts"] ?? "";
@@ -23,7 +23,7 @@ namespace RocketTester.ONS
         static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "p";
         static string _ApplicationAlias = ConfigurationManager.AppSettings["ApplicationAlias"] ?? "unknown";
 
-        public AbstractOrderProducerService(Enum topicTag)
+        public AbstractBaseProducerService(Enum topicTag)
         {
             TopicTag = topicTag;
         }
@@ -49,7 +49,7 @@ namespace RocketTester.ONS
         }
 
         /// <summary>
-        /// 上游生产者的实现rocketmq的核心方法，其中会由rocketmq自动间接调用AbstractOrderProducerService实例的InternalProduce方法
+        /// 上游生产者的实现rocketmq的核心方法，其中会由rocketmq自动间接调用AbstractProducerService实例的InternalProduce方法
         /// </summary>
         /// <param name="model">接收的参数</param>
         /// <returns>事务执行结果</returns>
@@ -74,18 +74,16 @@ namespace RocketTester.ONS
                 RedisTool RT;
                 string result = JsonConvert.SerializeObject(serviceResult);
 
-                IONSProducer producer = ONSHelper.ONSProducerList.Where(p => (p.Type == ONSMessageType.ORDER.ToString().ToUpper()) && (p.ProducerId == pid)).FirstOrDefault();
+                IONSProducer producer = ONSHelper.ONSProducerList.Where(p => (p.Type == ONSMessageType.BASE.ToString().ToUpper()) && (p.ProducerId == pid)).FirstOrDefault();
                 if (producer != null)
                 {
-                    shardingKey = serviceResult.Parameter;
-
                     Message message = new Message(topic, tag, body);
                     message.setKey(key);
-                    message.putUserProperties("type", ONSMessageType.ORDER.ToString());
+                    message.putUserProperties("type", ONSMessageType.BASE.ToString());
                     message.putUserProperties("shardingKey", shardingKey);
 
                     LogHelper.Log("send:" + key);
-                    SendResultONS sendResultONS = producer.send(message, shardingKey);
+                    SendResultONS sendResultONS = producer.send(message, null);
 
                     try
                     {
@@ -107,7 +105,7 @@ namespace RocketTester.ONS
             produceData.Tag = tag;
             produceData.ProducerId = pid;
             produceData.Key = key;
-            produceData.Type = ONSMessageType.ORDER.ToString();
+            produceData.Type = ONSMessageType.BASE.ToString();
             produceData.Message = body;
             produceData.Data = data;
             produceData.TransactionType = "";
