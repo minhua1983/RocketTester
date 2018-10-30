@@ -77,10 +77,10 @@ ServiceResult serviceResult = orderService.Create(order);
 
 当然OrderService类类的ProcessCore的参数类型是可以任意类型的的，因为基类使用的是泛型，返回类型必须是ServiceResult类型。此ProcessCore方法是基类的抽象方法，因此必须override。如果此方法执行过程中出现异常，框架会将消息以TransactionStatus.Unknow状态提交，之后0~5秒内执行第一次回查（即调用Checker.check方法），之后还是TransactionStatus.Unknow状态的话，会每5秒回查一次，直至消息状态为TransactionStatus.CommitTransaction或TransactionStatus.RollbackTransaction。
 ```
-public class OrderService:AbstractTransportProducerService<Order>
+public class OrderService:AbstractTranProducerService<Order>
 {
-    //需要指定构造函数，并把ONSMessageTopic和ONSMessageTag的枚举值给到基类去持久化为属性
-    public OrderService():base(new TopicTag() { Topic = ONSMessageTopic.ORDER_MSG, Tag = ONSMessageTag.ORDER_CREATED})
+    //需要指定构造函数，并把{TOPIC}.{TAG}的枚举值给到基类去持久化为属性
+    public OrderService():base(BASE_TESTER1.BASE_TESTER1_TAG1)
     {
     
     }
@@ -149,14 +149,10 @@ public class OrderService:AbstractTransportProducerService<Order>
 
 OrderReceiverService类的ProcessCore的参数类型是可以任意类型的的，因为基类使用的是泛型，它的内容实际就是ServiceResult实例的Data属性，返回类型必须使用bool类型，此ProcessCore方法是基类的抽象方法，因此必须override。逻辑上执行没问题的话，返回true，如果逻辑上执行时遇到异常，或返回不是期待的结果，可以反回false，框架会按Action.ReconsumeLater状态提交消费状态，直至消费状态以Action.CommitMessage被提交。如果消费状态一直以Action.ReconsumeLater状态提交的话，消息中心会在4小时46分钟内一共发送16次重试消费，之后就不会再次发送了，具体重试的时间间隔见如下链接：https://help.aliyun.com/document_detail/43490.html。
 ```
-public class OrderReceiverService: AbstractConsumerService<Order>
+public class OrderReceiverService: AbstractTranConsumerService<Order>
 {
-    //需要指定构造函数，并把ONSMessageTopic和ONSMessageTag的枚举值给到基类去持久化为属性
-    public OrderReceiverService():base(new List<TopicTag>(){ 
-        new TopicTag() {
-            Topic = ONSMessageTopic.ORDER_MSG, Tag = ONSMessageTag.ORDER_CREATED
-        }
-    })
+    //需要指定构造函数，并把{TOPIC}.{TAG}的枚举值给到基类去持久化为属性
+    public OrderReceiverService():base(BASE_TESTER1.BASE_TESTER1_TAG1)
     {
     
     }
