@@ -70,8 +70,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Enum\ONSMessageTag.cs" />
-    <Compile Include="Enum\ONSMessageTopic.cs" />
+    <Compile Include="Enum\Topic\Worker\BASE_COMMON.cs" />
+    <Compile Include="Enum\Topic\Tester\BASE_TESTER1.cs" />
+    <Compile Include="Enum\Topic\Tester\ORDER_TESTER1.cs" />
+    <Compile Include="Enum\Topic\Tester\TRAN_TESTER1.cs" />
     <Compile Include="Model\Data\ConsumeData.cs" />
     <Compile Include="Model\Consumer\IONSConsumer.cs" />
     <Compile Include="Model\Consumer\ONSConsumer.cs" />
@@ -80,7 +82,6 @@
     <Compile Include="Model\Listener\ONSMessageOrderListener.cs" />
     <Compile Include="Model\Data\ProduceData.cs" />
     <Compile Include="Model\Producer\ONSProducer.cs" />
-    <Compile Include="Model\TopicTag.cs" />
     <Compile Include="SDK\Action.cs" />
     <Compile Include="SDK\ConsumeContext.cs" />
     <Compile Include="SDK\ConsumeOrderContext.cs" />

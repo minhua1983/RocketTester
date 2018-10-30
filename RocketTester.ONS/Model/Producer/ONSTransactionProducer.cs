@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ons;
-using RocketTester.ONS.Enum;
-using RocketTester.ONS.Util;
 using System.Diagnostics;
+using ons;
 
-namespace RocketTester.ONS.Model
+namespace RocketTester.ONS
 {
     /// <summary>
     /// 事务生产者类不支持自定义属性，继承它又需要自己实现它的构造，因此无法继承他来扩展，但又不能修改它类的定义，因此这里使用代理模式类来扩展它。

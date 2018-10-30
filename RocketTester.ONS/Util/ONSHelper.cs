@@ -6,13 +6,10 @@ using System.Reflection;
 using System.Collections.Concurrent;
 using System.Configuration;
 using ons;
-using RocketTester.ONS.Enum;
-using RocketTester.ONS.Model;
-using RocketTester.ONS.Service;
 using Redis.Framework;
 using Newtonsoft.Json;
 
-namespace RocketTester.ONS.Util
+namespace RocketTester.ONS
 {
     /// <summary>
     /// 事务消息帮助类
@@ -252,10 +249,10 @@ namespace RocketTester.ONS.Util
                 //string serviceTopic = type.GetProperty("Topic").GetValue(service).ToString();
                 //string serviceTag = type.GetProperty("Tag").GetValue(service).ToString();
 
-                TopicTag topicTag = (TopicTag)type.GetProperty("TopicTag").GetValue(service);
+                Enum topicTag = (Enum)type.GetProperty("TopicTag").GetValue(service);
                 if (topicTag != null)
                 {
-                    string serviceTopic = topicTag.Topic.ToString();
+                    string serviceTopic = topicTag.GetType().Name;
                     string topic = (_Environment + "_" + serviceTopic).ToLower();
                     string producerId = ("PID_" + topic).ToUpper();
                     IONSProducer producer = ONSProducerList.Where(p => (p.Type == messageType.ToString()) && (p.ProducerId == producerId)).FirstOrDefault();
@@ -291,13 +288,13 @@ namespace RocketTester.ONS.Util
                 //string serviceTopic = type.GetProperty("Topic").GetValue(service).ToString();
                 //string serviceTag = type.GetProperty("Tag").GetValue(service).ToString();
 
-                List<TopicTag> topicTagList = (List<TopicTag>)type.GetProperty("TopicTagList").GetValue(service);
-                if (topicTagList != null && topicTagList.Count > 0)
+                Enum[] topicTagList = (Enum[])type.GetProperty("TopicTagList").GetValue(service);
+                if (topicTagList != null && topicTagList.Length > 0)
                 {
-                    foreach (TopicTag topicTag in topicTagList)
+                    foreach (Enum topicTag in topicTagList)
                     {
-                        string serviceTopic = topicTag.Topic.ToString();
-                        string serviceTag = topicTag.Tag.ToString();
+                        string serviceTopic = topicTag.GetType().Name;
+                        string serviceTag = topicTag.ToString();
 
 
                         string topic = (_Environment + "_" + serviceTopic).ToLower();

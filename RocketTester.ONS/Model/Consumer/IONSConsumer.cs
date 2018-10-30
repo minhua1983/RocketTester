@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using RocketTester.ONS.Enum;
 using ons;
 
-namespace RocketTester.ONS.Model
+namespace RocketTester.ONS
 {
     /// <summary>
     /// 消费者代理类的接口

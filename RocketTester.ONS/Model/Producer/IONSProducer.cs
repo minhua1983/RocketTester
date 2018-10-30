@@ -4,9 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ons;
-using RocketTester.ONS.Enum;
 
-namespace RocketTester.ONS.Model
+namespace RocketTester.ONS
 {
     /// <summary>
     /// 生产者代理类的接口

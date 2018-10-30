@@ -4,27 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using RocketTester.ONS.Enum;
-using RocketTester.ONS.Model;
 
-namespace RocketTester.ONS.Service
+namespace RocketTester.ONS
 {
     public abstract class AbstractConsumerService<T> : IAbstractConsumerService
     {
-        /*
-        public ONSMessageTopic Topic { get; private set; }
-        public ONSMessageTag Tag { get; private set; }
+        public Enum[] TopicTagList { get; private set; }
 
-        public AbstractConsumerService(ONSMessageTopic topic, ONSMessageTag tag)
-        {
-            Topic = topic;
-            Tag = tag;
-        }
-        //*/
-
-        public List<TopicTag> TopicTagList { get; private set; }
-
-        public AbstractConsumerService(List<TopicTag> topicTagList)
+        public AbstractConsumerService(params Enum[] topicTagList) 
         {
             TopicTagList = topicTagList;
         }

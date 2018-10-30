@@ -3,18 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using RocketTester.ONS.Enum;
-using RocketTester.ONS.Model;
 using System.Web;
 using System.Reflection;
 using System.Collections.Concurrent;
 using System.Configuration;
 using ons;
-using RocketTester.ONS.Util;
 using Redis.Framework;
 using Newtonsoft.Json;
 
-namespace RocketTester.ONS.Service
+namespace RocketTester.ONS
 {
     public abstract class AbstractTransactionProducerService<T> : IAbstractProducerService<T>
     {
@@ -37,8 +34,8 @@ namespace RocketTester.ONS.Service
         }
         //*/
 
-        public TopicTag TopicTag { get; private set; }
-        public AbstractTransactionProducerService(TopicTag topicTag)
+        public Enum TopicTag { get; private set; }
+        public AbstractTransactionProducerService(Enum topicTag)
         {
             TopicTag = topicTag;
         }
@@ -77,18 +74,20 @@ namespace RocketTester.ONS.Service
         /// <returns>事务执行结果</returns>
         public ServiceResult Process(T model)
         {
-            string key = _Environment + "_" + _ApplicationAlias + ":" + _Environment + "_" + TopicTag.Topic.ToString().ToLower() + ":" + TopicTag.Tag.ToString() + ":" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ":" + Guid.NewGuid().ToString();
+            string topic = _Environment + "_" + TopicTag.GetType().Name.ToLower();
+            string tag = TopicTag.ToString();
+            string key = _Environment + "_" + _ApplicationAlias + ":" + topic + ":" + tag + ":" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ":" + Guid.NewGuid().ToString();
             string shardingKey = "";
 
             //body不能为空，否则要报错，Func<string,TransactionResult>对应方法中，lambda什么的错误，实际根本没错，就是Message实体的body为空
-            Message message = new Message(_Environment + "_" + TopicTag.Topic.ToString().ToLower(), TopicTag.Tag.ToString(), "no content");
+            Message message = new Message(topic, tag, "hello");
             //设置key作为自定义的消息唯一标识，不能用ONS消息自带的MsgId作为消息的唯一标识，因为它不保证一定不出现重复。
             message.setKey(key);
             message.putUserProperties("type", ONSMessageType.TRAN.ToString());
             message.putUserProperties("shardingKey", shardingKey);
 
-            LogHelper.Log("topic " + TopicTag.Topic);
-            LogHelper.Log("tag " + TopicTag.Tag);
+            LogHelper.Log("topic " + topic);
+            LogHelper.Log("tag " + tag);
 
             //Func<T, ONSTransactionResult> func = this.InternalProduce;
             MethodInfo methodInfo = this.GetType().GetMethod("InternalProcess", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -127,7 +126,6 @@ namespace RocketTester.ONS.Service
 
             LogHelper.Log("get ready to send message...");
 
-            string topic = (_Environment + "_" + TopicTag.Topic).ToLower();
             string producerId = ("PID_" + topic).ToUpper();
 
             //生成半消息，并调用LocalTransactionExecuter对象的execute方法，它内部会执行委托实例（同时会将执行后的TransactionResult以Message的key为redis的key存入redis中），根据执行结果再决定是否要将消息状态设置为rollback或commit

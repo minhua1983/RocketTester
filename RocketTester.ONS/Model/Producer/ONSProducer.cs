@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ons;
-using RocketTester.ONS.Enum;
-using RocketTester.ONS.Util;
 using System.Diagnostics;
+using ons;
 
-namespace RocketTester.ONS.Model
+namespace RocketTester.ONS
 {
     public class ONSProducer : IONSProducer
     {

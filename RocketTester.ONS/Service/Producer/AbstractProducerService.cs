@@ -4,15 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Configuration;
-using RocketTester.ONS.Enum;
-using RocketTester.ONS.Model;
-using RocketTester.ONS.Util;
 using ons;
 using Redis.Framework;
 using Newtonsoft.Json;
 using Nest.Framework;
 
-namespace RocketTester.ONS.Service
+namespace RocketTester.ONS
 {
     public abstract class AbstractProducerService<T> : IAbstractProducerService<T>
     {
@@ -37,12 +34,11 @@ namespace RocketTester.ONS.Service
         }
         //*/
 
-        public TopicTag TopicTag { get; private set; }
-        public AbstractProducerService(TopicTag topicTag)
+        public Enum TopicTag { get; private set; }
+        public AbstractProducerService(Enum topicTag)
         {
             TopicTag = topicTag;
         }
-
 
         /// <summary>
         /// ProcessCore抽象方法，主要用于派生类重写它逻辑，即上游生产者事务方法。
@@ -73,10 +69,10 @@ namespace RocketTester.ONS.Service
         {
             ServiceResult serviceResult = InternalProcess(model);
 
-            string topic = (_Environment + "_" + TopicTag.Topic).ToLower();
-            string tag = TopicTag.Tag.ToString();
+            string topic = (_Environment + "_" + TopicTag.GetType().Name).ToLower();
+            string tag = TopicTag.ToString();
             string pid = ("PID_" + topic).ToUpper();
-            string key = _Environment + "_" + _ApplicationAlias + ":" + _Environment + "_" + TopicTag.Topic.ToString().ToLower() + ":" + TopicTag.Tag.ToString() + ":" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ":" + Guid.NewGuid().ToString();
+            string key = _Environment + "_" + _ApplicationAlias + ":" + topic + ":" + tag + ":" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ":" + Guid.NewGuid().ToString();
             string data = JsonConvert.SerializeObject(serviceResult.Data);
             string body = "no content";
             string method = this.GetType().FullName + ".ProcessCore";

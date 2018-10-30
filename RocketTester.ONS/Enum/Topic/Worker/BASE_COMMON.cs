@@ -6,8 +6,11 @@ using System.Threading.Tasks;
 
 namespace RocketTester.ONS
 {
-    public interface IAbstractConsumerService
+    public enum BASE_COMMON
     {
-        Enum[] TopicTagList { get; }
+        SEND_MAIL,
+        SEND_SMS,
+        //SEND_ES_LOG,
+        //SEND_ES_DATA,
     }
 }

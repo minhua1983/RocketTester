@@ -3,13 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using RocketTester.ONS.Enum;
-using RocketTester.ONS.Model;
-using RocketTester.ONS.Util;
-using ons;
 using System.Diagnostics;
+using ons;
 
-namespace RocketTester.ONS.Model
+namespace RocketTester.ONS
 {
     public class ONSTransactionConsumer : IONSConsumer
     {

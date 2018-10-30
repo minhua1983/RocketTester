@@ -10,13 +10,9 @@ using System.Reflection;
 using Newtonsoft.Json;
 using ons;
 using Redis.Framework;
-using RocketTester.ONS.Enum;
-using RocketTester.ONS.Model;
-using RocketTester.ONS.Service;
-using RocketTester.ONS.Util;
 using Nest.Framework;
 
-namespace RocketTester.ONS.Model
+namespace RocketTester.ONS
 {
 
     public class ONSLocalTransactionExecuter : LocalTransactionExecuter

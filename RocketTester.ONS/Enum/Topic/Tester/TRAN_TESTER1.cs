@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace RocketTester.ONS
 {
-    public interface IAbstractConsumerService
+    public enum TRAN_TESTER1
     {
-        Enum[] TopicTagList { get; }
+        TRAN_TESTER1_TAG1,
+        TRAN_TESTER1_TAG2,
     }
 }

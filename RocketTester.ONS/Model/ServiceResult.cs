@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RocketTester.ONS.Model
+namespace RocketTester.ONS
 {
     /// <summary>
     /// 事务结果类型

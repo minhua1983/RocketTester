@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Nest.Framework;
 using Newtonsoft.Json;
 
-namespace RocketTester.ONS.Model
+namespace RocketTester.ONS
 {
     [ESData]
     public class ProduceData : BaseData

@@ -11,12 +11,9 @@ using Action = ons.Action;
 using ons;
 using Redis.Framework;
 using Newtonsoft.Json;
-using RocketTester.ONS.Model;
-using RocketTester.ONS.Service;
-using RocketTester.ONS.Util;
 using Nest.Framework;
 
-namespace RocketTester.ONS.Model
+namespace RocketTester.ONS
 {
     /// <summary>
     /// MyMessageListener类继承自ons.MessageListener。当pushConsumer订阅消息后，会调用consume。同一个网站下不允许不同的ConsumerServer使用相同的Topic，且Tag也相同
@@ -72,7 +69,7 @@ namespace RocketTester.ONS.Model
             string body = value.getMsgBody();
             string method = "";
             string shardingKey = value.getUserProperties("shardingKey");
-            TopicTag topicTag = null;
+            Enum topicTag = null;
 
             try
             {
@@ -88,14 +85,14 @@ namespace RocketTester.ONS.Model
                     //string serviceTopic = type.GetProperty("Topic").GetValue(service).ToString();
                     //string serviceTag = type.GetProperty("Tag").GetValue(service).ToString();
 
-                    List<TopicTag> topicTagList = (List<TopicTag>)type.GetProperty("TopicTagList").GetValue(service);
+                    Enum[] topicTagList = (Enum[])type.GetProperty("TopicTagList").GetValue(service);
                     if (topicTagList != null)
                     {
                         //需要同时判断topic和tag都匹配
                         topicTag = topicTagList.Where(tt =>
                         {
-                            string serviceTopic = (_Environment + "_" + tt.Topic).ToLower();
-                            string serviceTag = tt.Tag.ToString();
+                            string serviceTopic = (_Environment + "_" + tt.GetType().Name).ToLower();
+                            string serviceTag = tt.ToString();
                             return (topic.ToLower() == serviceTopic) && (tag.ToLower() == serviceTag.ToLower());
                         }).FirstOrDefault();
 
