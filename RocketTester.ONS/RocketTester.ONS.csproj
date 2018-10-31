@@ -70,6 +70,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Enum\Topic\Tester\TRAN_TESTER2.cs" />
     <Compile Include="Enum\Topic\Worker\BASE_COMMON.cs" />
     <Compile Include="Enum\Topic\Tester\BASE_TESTER1.cs" />
     <Compile Include="Enum\Topic\Tester\ORDER_TESTER1.cs" />
@@ -143,6 +144,7 @@
     <Compile Include="Service\Consumer\AbstractConsumerService.cs" />
     <Compile Include="Service\Consumer\AbstractOrderConsumerService.cs" />
     <Compile Include="Service\Consumer\AbstractTranConsumerService.cs" />
+    <Compile Include="Service\Consumer\IAbstractConsumerService.cs" />
     <Compile Include="Service\Producer\AbstractBaseProducerService.cs" />
     <Compile Include="Service\Producer\AbstractOrderProducerService.cs" />
     <Compile Include="Service\Producer\AbstractProducerService.cs" />

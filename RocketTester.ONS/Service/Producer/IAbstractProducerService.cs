@@ -6,13 +6,8 @@ using System.Threading.Tasks;
 
 namespace RocketTester.ONS
 {
-    public interface IAbstractProducerService<T>
+    public interface IAbstractProducerService
     {
-        /// <summary>
-        /// 服务的外部调用方法
-        /// </summary>
-        /// <param name="model">参数</param>
-        /// <returns>ServiceResult实例</returns>
-        ServiceResult Process(T model);
+        Enum TopicTag { get; }
     }
 }

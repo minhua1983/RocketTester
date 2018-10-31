@@ -11,7 +11,7 @@ using Nest.Framework;
 
 namespace RocketTester.ONS
 {
-    public abstract class AbstractBaseProducerService<T> :AbstractProducerService, IAbstractProducerService<T>
+    public abstract class AbstractBaseProducerService<T> : AbstractProducerService<T>, IAbstractProducerService
     {
         //redis地址
         static string _RedisExchangeHosts = ConfigurationManager.AppSettings["RedisExchangeHosts"] ?? "";
@@ -23,29 +23,11 @@ namespace RocketTester.ONS
         static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "p";
         static string _ApplicationAlias = ConfigurationManager.AppSettings["ApplicationAlias"] ?? "unknown";
 
+        public Enum TopicTag { get; private set; }
+
         public AbstractBaseProducerService(Enum topicTag)
         {
             TopicTag = topicTag;
-        }
-
-        /// <summary>
-        /// ProcessCore抽象方法，主要用于派生类重写它逻辑，即上游生产者事务方法。
-        /// </summary>
-        /// <param name="model">接收的参数</param>
-        /// <returns>事务执行结果</returns>
-        protected abstract ServiceResult ProcessCore(T model);
-
-        /// <summary>
-        /// 通过反射调用
-        /// </summary>
-        /// <param name="model">接收的参数</param>
-        /// <returns>事务执行结果</returns>
-        protected ServiceResult InternalProcess(T model)
-        {
-            //此处预留可以做干预
-            ServiceResult result = ProcessCore(model);
-            //此处预留可以做干预
-            return result;
         }
 
         /// <summary>
@@ -53,7 +35,7 @@ namespace RocketTester.ONS
         /// </summary>
         /// <param name="model">接收的参数</param>
         /// <returns>事务执行结果</returns>
-        public ServiceResult Process(T model)
+        public sealed override ServiceResult Process(T model)
         {
             ServiceResult serviceResult = InternalProcess(model);
 

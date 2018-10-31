@@ -13,7 +13,7 @@ using Newtonsoft.Json;
 
 namespace RocketTester.ONS
 {
-    public abstract class AbstractTranProducerService<T> : AbstractProducerService, IAbstractProducerService<T>
+    public abstract class AbstractTranProducerService<T> : AbstractProducerService<T>, IAbstractProducerService
     {
         //redis地址
         static string _RedisExchangeHosts = ConfigurationManager.AppSettings["RedisExchangeHosts"] ?? "";
@@ -23,36 +23,11 @@ namespace RocketTester.ONS
         static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "p";
         static string _ApplicationAlias = ConfigurationManager.AppSettings["ApplicationAlias"] ?? "unknown";
 
+        public Enum TopicTag { get; private set; }
+
         public AbstractTranProducerService(Enum topicTag)
         {
             TopicTag = topicTag;
-        }
-
-        /*不建议在静态构造中初始化生产者和消费者，因为你不能保证他在global.appaction_start之后执行，正犹豫这个原因可能导致rocketmq内部错误。
-        static BaseTransactionService()
-        { 
-            
-        }
-        //*/
-
-        /// <summary>
-        /// ProcessCore抽象方法，主要用于派生类重写它逻辑，即上游生产者事务方法。
-        /// </summary>
-        /// <param name="model">接收的参数</param>
-        /// <returns>事务执行结果</returns>
-        protected abstract ServiceResult ProcessCore(T model);
-
-        /// <summary>
-        /// 通过反射调用
-        /// </summary>
-        /// <param name="model">接收的参数</param>
-        /// <returns>事务执行结果</returns>
-        protected ServiceResult InternalProcess(T model)
-        {
-            //此处预留可以做干预
-            ServiceResult result = ProcessCore(model);
-            //此处预留可以做干预
-            return result;
         }
 
         /// <summary>
@@ -60,7 +35,7 @@ namespace RocketTester.ONS
         /// </summary>
         /// <param name="model">接收的参数</param>
         /// <returns>事务执行结果</returns>
-        public ServiceResult Process(T model)
+        public sealed override ServiceResult Process(T model)
         {
             string topic = (_Environment + "_" + TopicTag.GetType().Name).ToUpper();
             string tag = TopicTag.ToString();
@@ -132,7 +107,5 @@ namespace RocketTester.ONS
             //反序列化获取到一个TransactionResult对象
             return JsonConvert.DeserializeObject<ServiceResult>(result);
         }
-
-
     }
 }
