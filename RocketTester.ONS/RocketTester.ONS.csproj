@@ -70,7 +70,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Enum\Topic\Tester\TRAN_TESTER2.cs" />
     <Compile Include="Enum\Topic\Worker\BASE_COMMON.cs" />
     <Compile Include="Enum\Topic\Tester\BASE_TESTER1.cs" />
     <Compile Include="Enum\Topic\Tester\ORDER_TESTER1.cs" />
