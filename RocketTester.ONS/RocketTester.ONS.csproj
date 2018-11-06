@@ -48,21 +48,28 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Liinji.Common">
+      <HintPath>..\refdll\Liinji.Common.dll</HintPath>
+    </Reference>
     <Reference Include="Nest.Framework">
       <HintPath>..\refdll\Nest.Framework.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.6.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="Redis.Framework">
+    <Reference Include="Redis.Framework, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\refdll\Redis.Framework.dll</HintPath>
     </Reference>
-    <Reference Include="StackExchange.Redis">
-      <HintPath>..\refdll\StackExchange.Redis.dll</HintPath>
+    <Reference Include="StackExchange.Redis, Version=1.2.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\StackExchange.Redis.1.2.6\lib\net45\StackExchange.Redis.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -74,13 +81,14 @@
     <Compile Include="Enum\Topic\Tester\BASE_TESTER1.cs" />
     <Compile Include="Enum\Topic\Tester\ORDER_TESTER1.cs" />
     <Compile Include="Enum\Topic\Tester\TRAN_TESTER1.cs" />
-    <Compile Include="Model\Data\ConsumeData.cs" />
+    <Compile Include="Model\Data\ConsumerData.cs" />
     <Compile Include="Model\Consumer\IONSConsumer.cs" />
     <Compile Include="Model\Consumer\ONSBaseConsumer.cs" />
     <Compile Include="Model\Consumer\ONSOrderConsumer.cs" />
     <Compile Include="Model\Consumer\ONSTranConsumer.cs" />
+    <Compile Include="Model\Listener\ListenerHelper.cs" />
     <Compile Include="Model\Listener\ONSMessageOrderListener.cs" />
-    <Compile Include="Model\Data\ProduceData.cs" />
+    <Compile Include="Model\Data\ProducerData.cs" />
     <Compile Include="Model\Producer\ONSBaseProducer.cs" />
     <Compile Include="SDK\Action.cs" />
     <Compile Include="SDK\ConsumeContext.cs" />
@@ -152,16 +160,18 @@
     <Compile Include="Model\Listener\ONSMessageListener.cs" />
     <Compile Include="Model\ONSLocalTransactionChecker.cs" />
     <Compile Include="Model\ONSLocalTransactionExecuter.cs" />
-    <Compile Include="Model\ServiceResult.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Service\Producer\BaseProducerService.cs" />
     <Compile Include="Service\Producer\IAbstractProducerService.cs" />
+    <Compile Include="Service\Producer\OrderProducerService.cs" />
     <Compile Include="Util\ONSHelper.cs" />
-    <Compile Include="Util\LogHelper.cs" />
+    <Compile Include="Util\DebugUtil.cs" />
     <Compile Include="Model\Producer\ONSOrderProducer.cs" />
     <Compile Include="Enum\ONSMessageType.cs" />
     <Compile Include="Model\Producer\ONSTranProducer.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="ONSClient4CPP.exp">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

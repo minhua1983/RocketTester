@@ -52,7 +52,7 @@ namespace RocketTester.ONS
             stopwatch.Start();
             _producer.shutdown();
             stopwatch.Stop();
-            LogHelper.Log("ONSOrderProducer spent " + stopwatch.ElapsedMilliseconds + " on shutdown.");
+            DebugUtil.Debug("ONSOrderProducer spent " + stopwatch.ElapsedMilliseconds + " on shutdown.");
         }
 
         /// <summary>
@@ -64,7 +64,7 @@ namespace RocketTester.ONS
         public SendResultONS send(Message message, object parameter)
         {
             string shardingKey = parameter.ToString();
-            LogHelper.Log("shardingKey:" + shardingKey);
+            DebugUtil.Debug("shardingKey:" + shardingKey);
             return _producer.send(message, shardingKey);
         }
     }

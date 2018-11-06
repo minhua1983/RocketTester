@@ -52,7 +52,7 @@ namespace RocketTester.ONS
             stopwatch.Start();
             _producer.shutdown();
             stopwatch.Stop();
-            LogHelper.Log("ONSProducer spent " + stopwatch.ElapsedMilliseconds + " on shutdown.");
+            DebugUtil.Debug("ONSProducer spent " + stopwatch.ElapsedMilliseconds + " on shutdown.");
         }
 
         /// <summary>

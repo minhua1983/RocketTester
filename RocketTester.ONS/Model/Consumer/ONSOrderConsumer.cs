@@ -52,7 +52,7 @@ namespace RocketTester.ONS
             stopwatch.Start();
             _consumer.shutdown();
             stopwatch.Stop();
-            LogHelper.Log("ONSOrderConsumer spent " + stopwatch.ElapsedMilliseconds + " on shutdown.");
+            DebugUtil.Debug("ONSOrderConsumer spent " + stopwatch.ElapsedMilliseconds + " on shutdown.");
         }
 
         public void subscribe(string topic, string tags)

@@ -4,30 +4,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Configuration;
+using System.Web;
+using System.Text;
 using ons;
-using Redis.Framework;
 using Newtonsoft.Json;
 using Nest.Framework;
+using Liinji.Common;
 
 namespace RocketTester.ONS
 {
-    public abstract class AbstractBaseProducerService<T> : AbstractProducerService<T>, IAbstractProducerService
+    public abstract class AbstractBaseProducerService<T> : AbstractProducerService<T>
     {
-        //redis地址
-        static string _RedisExchangeHosts = ConfigurationManager.AppSettings["RedisExchangeHosts"] ?? "";
-        //启用redis第N个数据库
-        static int _ONSRedisDBNumber = string.IsNullOrEmpty(ConfigurationManager.AppSettings["ONSRedisDBNumber"]) ? 11 : int.Parse(ConfigurationManager.AppSettings["ONSRedisDBNumber"]);
-        //redis中key的过期时间，目前设置了24小时
-        static int _ONSRedisServiceResultExpireIn = string.IsNullOrEmpty(ConfigurationManager.AppSettings["ONSRedisServiceResultExpireIn"]) ? 86400 : int.Parse(ConfigurationManager.AppSettings["ONSRedisServiceResultExpireIn"]);
-        //获取当前环境，p代表生产环境production，s代表测试环境staging，d代表开发环境development
-        static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "p";
-        static string _ApplicationAlias = ConfigurationManager.AppSettings["ApplicationAlias"] ?? "unknown";
-
-        public Enum TopicTag { get; private set; }
-
         public AbstractBaseProducerService(Enum topicTag)
+            : base(ONSMessageType.BASE, topicTag)
         {
-            TopicTag = topicTag;
+
         }
 
         /// <summary>
@@ -35,72 +26,62 @@ namespace RocketTester.ONS
         /// </summary>
         /// <param name="model">接收的参数</param>
         /// <returns>事务执行结果</returns>
-        public sealed override ServiceResult Process(T model)
+        public bool Process(T model)
         {
-            ServiceResult serviceResult = InternalProcess(model);
-
-            string topic = (_Environment + "_" + TopicTag.GetType().Name).ToUpper();
-            string tag = TopicTag.ToString();
-            string pid = ("PID_" + topic).ToUpper();
-            string key = _Environment + "_" + _ApplicationAlias + ":" + topic + ":" + tag + ":" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ":" + Guid.NewGuid().ToString();
-            string data = JsonConvert.SerializeObject(serviceResult.Data);
-            string body = "no content";
-            string method = this.GetType().FullName + ".ProcessCore";
+            if (_AliyunOnsIsAllowedToSend != "1") { return false; }
+            string requestTraceId = "";
+            string key = this.CreateMessageKey();
             string failureReason = "";
-            string shardingKey = "";
-
-            if (serviceResult.Pushable)
+            string body = "";
+            int accomplishment = 0;
+            int producedTimes = 0;
+            try
             {
-                //如果需要发送消息
-
-                RedisTool RT;
-                string result = JsonConvert.SerializeObject(serviceResult);
-
-                IONSProducer producer = ONSHelper.ONSProducerList.Where(p => (p.Type == ONSMessageType.BASE.ToString().ToUpper()) && (p.ProducerId == pid)).FirstOrDefault();
-                if (producer != null)
+                //获取requestTraceId
+                requestTraceId = this.GetRequestTraceId();
+                //此方法中，只要是普通消息或顺序消息都是空实现，直接返回true
+                InternalProcess(model);
+                //序列化实体，即消息正文
+                body = model.GetType().Name.ToLower() == "system.string" ? model.ToString() : JsonConvert.SerializeObject(model);
+                //防止中文乱码
+                body = Base64Util.Encode(body);
+                //获取生产者
+                IONSProducer producer = GetProducer();
+                //生成消息实体
+                Message message = new Message(this.Topic, this.Tag, body);
+                message.setKey(key);
+                message.putUserProperties("type", this.MessageType.ToString());
+                message.putUserProperties("requestTraceId", requestTraceId);
+                //message.putUserProperties("shardingKey", shardingKey);
+                //发送消息
+                SendResultONS sendResultONS = producer.send(message, null);
+                accomplishment = 1;
+                producedTimes = 1;
+                if (sendResultONS == null)
                 {
-                    Message message = new Message(topic, tag, body);
-                    message.setKey(key);
-                    message.putUserProperties("type", ONSMessageType.BASE.ToString());
-                    message.putUserProperties("shardingKey", shardingKey);
-
-                    LogHelper.Log("send:" + key);
-                    SendResultONS sendResultONS = producer.send(message, null);
-
-                    try
-                    {
-                        RT = new RedisTool(_ONSRedisDBNumber, _RedisExchangeHosts);
-                        RT.StringSet(key, result, TimeSpan.FromSeconds(_ONSRedisServiceResultExpireIn));
-                    }
-                    catch (Exception e)
-                    {
-                        failureReason = "捕捉异常：" + e.ToString();
-                        LogHelper.Log("捕捉异常：" + e.ToString());
-                    }
+                    throw new Exception("发送BASE消息失败。");
                 }
             }
+            catch (Exception e)
+            {
+                //将内部捕捉的错误赋值给failureReason，然后由ProduceData的FailureReason属性统一处理
+                failureReason = "发送BASE消息，key=" + key + "，捕捉异常：" + e.ToString();
+                return false;
+            }
+            finally
+            {
+                LogData(key, body, "", "", failureReason, accomplishment, producedTimes, failureReason != "" ? false : true);
+            }
+            return true;
+        }
 
-            ProduceData produceData = new ProduceData();
-            produceData.Accomplishment = 1;
-            produceData.ApplicationAlias = _ApplicationAlias;
-            produceData.Topic = topic;
-            produceData.Tag = tag;
-            produceData.ProducerId = pid;
-            produceData.Key = key;
-            produceData.Type = ONSMessageType.BASE.ToString();
-            produceData.Message = body;
-            produceData.Data = data;
-            produceData.TransactionType = "";
-            produceData.Method = method;
-            produceData.ServiceResult = JsonConvert.SerializeObject(serviceResult);
-            produceData.TransactionStatus = "";
-            produceData.FailureReason = failureReason;
-            produceData.ProducedTimes = 1;
-            produceData.Pushable = serviceResult.Pushable ? 1 : 0;
-            produceData.ShardingKey = shardingKey;
-            NestDataHelper.WriteData(produceData);
-
-            return serviceResult;
+        protected override IONSProducer InitilizeProducer(ONSFactoryProperty onsProducerFactoryProperty)
+        {
+            //实例化Producer
+            ons.Producer baseProducer = ONSFactory.getInstance().createProducer(onsProducerFactoryProperty);
+            //实例化代理类ONSProducer
+            IONSProducer producer = new ONSBaseProducer(this.Topic, this.Pid, baseProducer);
+            return producer;
         }
     }
 }

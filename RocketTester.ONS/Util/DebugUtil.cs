@@ -7,11 +7,13 @@ using System.IO;
 
 namespace RocketTester.ONS
 {
-    public class LogHelper
+    public class DebugUtil
     {
         static object lockHelper = new object();
-        public static void Log(string message)
+
+        public static void Debug(string message)
         {
+//#if DEBUG
             lock (lockHelper)
             {
                 using (StreamWriter writer = new StreamWriter(AppDomain.CurrentDomain.BaseDirectory + "/tracker.txt", true))
@@ -19,6 +21,7 @@ namespace RocketTester.ONS
                     writer.WriteLine("[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "] " + message);
                 }
             }
+//#endif
         }
     }
 }

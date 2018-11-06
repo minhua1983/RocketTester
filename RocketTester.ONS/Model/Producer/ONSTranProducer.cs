@@ -55,7 +55,7 @@ namespace RocketTester.ONS
             stopwatch.Start();
             _producer.shutdown();
             stopwatch.Stop();
-            LogHelper.Log("ONSTransactionProducer spent " + stopwatch.ElapsedMilliseconds + " on shutdown.");
+            DebugUtil.Debug("ONSTransactionProducer spent " + stopwatch.ElapsedMilliseconds + " on shutdown.");
         }
 
         /// <summary>

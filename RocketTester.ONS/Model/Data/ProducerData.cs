@@ -9,12 +9,12 @@ using Newtonsoft.Json;
 namespace RocketTester.ONS
 {
     [ESData]
-    public class ConsumeData:BaseData
+    public class ProducerData : BaseData
     {
-        public ConsumeData()
-            : base(IndexTypeEnum.CONSUMER_DATA)
-        { 
-            
+        public ProducerData(string requestTraceId)
+            : base(IndexTypeEnum.PRODUCER_DATA, requestTraceId)
+        {
+
         }
 
         [JsonProperty("accomplishment")]
@@ -22,9 +22,6 @@ namespace RocketTester.ONS
 
         [JsonProperty("applicationAlias")]
         public string ApplicationAlias { get; set; }
-
-        [JsonProperty("consumedStatus")]
-        public string ConsumedStatus { get; set; }
 
         [JsonProperty("topic")]
         public string Topic { get; set; }
@@ -35,9 +32,6 @@ namespace RocketTester.ONS
         [JsonProperty("producerId")]
         public string ProducerId { get; set; }
 
-        [JsonProperty("consumerId")]
-        public string ConsumerId { get; set; }
-
         [JsonProperty("key")]
         public string Key { get; set; }
 
@@ -47,17 +41,23 @@ namespace RocketTester.ONS
         [JsonProperty("message")]
         public string Message { get; set; }
 
-        [JsonProperty("data")]
-        public string Data { get; set; }
+        [JsonProperty("transactionType")]
+        public string TransactionType { get; set; }
 
         [JsonProperty("method")]
         public string Method { get; set; }
 
+        [JsonProperty("serviceResult")]
+        public bool ServiceResult { get; set; }
+
+        [JsonProperty("transactionStatus")]
+        public string TransactionStatus { get; set; }
+
         [JsonProperty("failureReason")]
         public string FailureReason { get; set; }
 
-        [JsonProperty("consumedTimes")]
-        public int ConsumedTimes { get; set; }
+        [JsonProperty("producedTimes")]
+        public int ProducedTimes { get; set; }
 
         [JsonProperty("shardingKey")]
         public string ShardingKey { get; set; }
