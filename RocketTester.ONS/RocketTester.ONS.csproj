@@ -81,6 +81,7 @@
     <Compile Include="Enum\Topic\Tester\BASE_TESTER1.cs" />
     <Compile Include="Enum\Topic\Tester\ORDER_TESTER1.cs" />
     <Compile Include="Enum\Topic\Tester\TRAN_TESTER1.cs" />
+    <Compile Include="Enum\Topic\Worker\BASE_TMS.cs" />
     <Compile Include="Model\Data\ConsumerData.cs" />
     <Compile Include="Model\Consumer\IONSConsumer.cs" />
     <Compile Include="Model\Consumer\ONSBaseConsumer.cs" />

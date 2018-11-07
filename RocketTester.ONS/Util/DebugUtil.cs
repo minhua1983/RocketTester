@@ -4,24 +4,29 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Configuration;
 
 namespace RocketTester.ONS
 {
     public class DebugUtil
     {
+        static string _AliyunOnsIsDebugEnabled = ConfigurationManager.AppSettings["AliyunOnsIsDebugEnabled"] ?? "0";
         static object lockHelper = new object();
 
         public static void Debug(string message)
         {
-//#if DEBUG
-            lock (lockHelper)
+            if (_AliyunOnsIsDebugEnabled == "1")
             {
-                using (StreamWriter writer = new StreamWriter(AppDomain.CurrentDomain.BaseDirectory + "/tracker.txt", true))
+                //#if DEBUG
+                lock (lockHelper)
                 {
-                    writer.WriteLine("[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "] " + message);
+                    using (StreamWriter writer = new StreamWriter(AppDomain.CurrentDomain.BaseDirectory + "/ons.txt", true))
+                    {
+                        writer.WriteLine("[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "] " + message);
+                    }
                 }
+                //#endif
             }
-//#endif
         }
     }
 }
