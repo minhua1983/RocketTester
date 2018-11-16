@@ -15,7 +15,7 @@ namespace RocketTester.ONS
 
         }
 
-        public static bool SendMessage(Enum topicTag, T model)
+        public static bool SendMq(Enum topicTag, T model)
         {
             BaseProducerService<T> service = new BaseProducerService<T>(topicTag);
             return service.Process(model);

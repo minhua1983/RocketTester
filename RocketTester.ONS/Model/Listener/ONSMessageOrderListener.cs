@@ -13,9 +13,11 @@ namespace RocketTester.ONS
     /// </summary>
     public class ONSMessageOrderListener : MessageOrderListener
     {
-        public ONSMessageOrderListener()
-        {
+        public Type ClassType { get; private set; }
 
+        public ONSMessageOrderListener(Type type)
+        {
+            this.ClassType = type;
         }
 
         ~ONSMessageOrderListener()
@@ -37,7 +39,7 @@ namespace RocketTester.ONS
 
             DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",consume...");
 
-            bool needToCommit = ListenerHelper.React(value);
+            bool needToCommit = ListenerHelper.React(value, this.ClassType);
 
             OrderAction action;
 

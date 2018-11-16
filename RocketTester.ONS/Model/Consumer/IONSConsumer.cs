@@ -33,6 +33,11 @@ namespace RocketTester.ONS
         string Type { get; }
 
         /// <summary>
+        /// 自定义属性ClassType对应消费实例的类型
+        /// </summary>
+        Type ClassType { get; }
+
+        /// <summary>
         /// 代理Producer实例的start方法
         /// </summary>
         void start();

@@ -11,6 +11,7 @@ using System.Runtime.Remoting.Messaging;
 using ons;
 using Newtonsoft.Json;
 using Liinji.Common;
+using Nest.Framework;
 
 namespace RocketTester.ONS
 {
@@ -94,7 +95,25 @@ namespace RocketTester.ONS
 
                 //生成半消息，并调用LocalTransactionExecuter对象的execute方法，它内部会执行委托实例（同时会将执行后的TransactionResult以Message的key为redis的key存入redis中），根据执行结果再决定是否要将消息状态设置为rollback或commit
                 IONSProducer transactionProducer = GetProducer();
-                SendResultONS sendResultONS = transactionProducer.send(message, executer);
+                SendResultONS sendResultONS = null;
+                try
+                {
+                    sendResultONS = transactionProducer.send(message, executer);
+                }
+                catch (Exception e)
+                {
+                    string className = this.GetType().Name;
+                    string methodName = "Process";
+
+                    //记录本地错误日志
+                    DebugUtil.Debug(_Environment + "." + _ApplicationAlias + "." + className + "." + methodName + "出错，key=" + key+"：" + e.ToString());
+
+                    //记录FATAL日志
+                    ONSHelper.SaveLog(LogTypeEnum.FATAL, className, methodName, _Environment + "." + _ApplicationAlias + "." + className + "." + methodName + "出错，key=" + key + "：" + e.ToString());
+
+                    //发送邮件
+                    ONSHelper.SendDebugMail(_Environment + "." + _ApplicationAlias + "." + className + "." + methodName + "出错", "key=" + key + "：" + e.ToString());
+                }
                 if (sendResultONS == null)
                 {
                     throw new Exception("发送TRAN消息失败。key=" + key);

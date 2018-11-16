@@ -9,6 +9,8 @@ using System.Text;
 using ons;
 using Redis.Framework;
 using Newtonsoft.Json;
+using Liinji.Common;
+using Nest.Framework;
 
 namespace RocketTester.ONS
 {
@@ -28,7 +30,7 @@ namespace RocketTester.ONS
         /// <summary>
         /// 下游消费者服务类列表
         /// </summary>
-        public static List<object> ONSConsumerServiceList { get;private set; }
+        public static List<object> ONSConsumerServiceList { get; private set; }
 
         /// <summary>
         /// 生产者代理类列表
@@ -61,7 +63,7 @@ namespace RocketTester.ONS
         //获取RAM控制台消息队列账号的SecretKey
         static string _AliyunOnsSecretKey = ConfigurationManager.AppSettings["AliyunOnsSecretKey"] ?? "";
         //获取当前环境，p代表生产环境production，s代表测试环境staging，d代表开发环境development
-        static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "p";
+        static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "s";
         //获取当前应用的别名
         static string _ApplicationAlias = ConfigurationManager.AppSettings["ApplicationAlias"] ?? "unknown";
         #endregion
@@ -74,43 +76,57 @@ namespace RocketTester.ONS
         {
             if (_AliyunOnsIsEnabled == "1")
             {
-                //初始化服务类列表和服务类标签列表
-                InitialProperties();
-
-                //判断生产者的服务类是否存在
-                if (ONSProducerServiceList.Count > 0)
+                try
                 {
-                    //输出生产者方法
-                    ONSProducerServiceList.ForEach(service => DebugUtil.Debug("生产者的服务类：" + service.GetType().FullName));
+                    //初始化服务类列表和服务类标签列表
+                    InitialProperties();
 
-                    if (ONSProducerList != null && ONSProducerList.Count > 0)
+                    //判断生产者的服务类是否存在
+                    if (ONSProducerServiceList.Count > 0)
                     {
-                        ONSProducerList.ForEach(producer =>
+                        //输出生产者方法
+                        ONSProducerServiceList.ForEach(service => DebugUtil.Debug("生产者的服务类：" + service.GetType().FullName));
+
+                        if (ONSProducerList != null && ONSProducerList.Count > 0)
                         {
-                            //启动上游事务生产者
-                            producer.start();
-                            DebugUtil.Debug("Topic：" + producer.Topic + "，ProducerId（" + producer.Type.ToString() + @"）：" + producer.ProducerId + @"生产者.start()");
-                        });
+                            ONSProducerList.ForEach(producer =>
+                            {
+                                //启动上游事务生产者
+                                producer.start();
+                                DebugUtil.Debug("Topic：" + producer.Topic + "，ProducerId（" + producer.Type.ToString() + @"）：" + producer.ProducerId + @"生产者.start()");
+                            });
+                        }
+                    }
+
+                    //判断消费者的服务类是否存在
+                    if (ONSConsumerServiceList.Count > 0)
+                    {
+                        //输出消费者方法
+                        ONSConsumerServiceList.ForEach(service => DebugUtil.Debug("消费者的服务类：" + service.GetType().FullName));
+
+                        if (ONSConsumerList != null && ONSConsumerList.Count > 0)
+                        {
+                            ONSConsumerList.ForEach(consumer =>
+                            {
+                                string tags = GetConsumerServiceTags(consumer.TagList);
+                                consumer.subscribe(consumer.Topic, tags);
+                                //启动上游事务生产者
+                                consumer.start();
+                                DebugUtil.Debug("Topic：" + consumer.Topic + "，ConsumerId（" + consumer.Type.ToString() + @"）：" + consumer.ConsumerId + @"消费者.start()，topic:" + consumer.Topic + "，tags:" + tags);
+                            });
+                        }
                     }
                 }
-
-                //判断消费者的服务类是否存在
-                if (ONSConsumerServiceList.Count > 0)
+                catch (Exception e)
                 {
-                    //输出消费者方法
-                    ONSConsumerServiceList.ForEach(service => DebugUtil.Debug("消费者的服务类：" + service.GetType().FullName));
+                    //记录本地错误日志
+                    DebugUtil.Debug(_Environment + "." + _ApplicationAlias + ".ONSHelper.Initialize出错：" + e.ToString());
 
-                    if (ONSConsumerList != null && ONSConsumerList.Count > 0)
-                    {
-                        ONSConsumerList.ForEach(consumer =>
-                        {
-                            string tags = GetConsumerServiceTags(consumer.TagList);
-                            consumer.subscribe(consumer.Topic, tags);
-                            //启动上游事务生产者
-                            consumer.start();
-                            DebugUtil.Debug("Topic：" + consumer.Topic + "，ConsumerId（" + consumer.Type.ToString() + @"）：" + consumer.ConsumerId + @"消费者.start()，topic:" + consumer.Topic + "，tags:" + tags);
-                        });
-                    }
+                    //记录FATAL日志，发送FATAL目前出错
+                    //SaveLog(LogTypeEnum.FATAL, "ONSHelper", "Initialize", _Environment + "." + _ApplicationAlias + ".ONSHelper.Initialize出错：" + e.ToString());
+
+                    //发送邮件
+                    SendDebugMail(_Environment + "." + _ApplicationAlias + ".ONSHelper.Initialize出错", "：" + e.ToString());
                 }
             }
         }
@@ -124,29 +140,44 @@ namespace RocketTester.ONS
         {
             if (_AliyunOnsIsEnabled == "1")
             {
-                if (ONSProducerList != null && ONSProducerList.Count > 0)
+                try
                 {
-                    ONSProducerList.ForEach(producer =>
+                    if (ONSProducerList != null && ONSProducerList.Count > 0)
                     {
+                        ONSProducerList.ForEach(producer =>
+                        {
 
-                        //关闭上游事务消息生产者
-                        producer.shutdown();
-                        DebugUtil.Debug("ProducerId（" + producer.Type.ToString() + @"）:" + producer.ProducerId + @"生产者.shutdown()");
-                    });
+                            //关闭上游事务消息生产者
+                            producer.shutdown();
+                            DebugUtil.Debug("ProducerId（" + producer.Type.ToString() + @"）:" + producer.ProducerId + @"生产者.shutdown()");
+                        });
+                    }
+
+                    if (ONSConsumerList != null && ONSConsumerList.Count > 0)
+                    {
+                        ONSConsumerList.ForEach(consumer =>
+                        {
+                            consumer.shutdown();
+                            DebugUtil.Debug("ConsumerId（" + consumer.Type.ToString() + @"）:" + consumer.ConsumerId + @"消费者.shutdown()");
+                        });
+                    }
                 }
-
-                if (ONSConsumerList != null && ONSConsumerList.Count > 0)
+                catch (Exception e)
                 {
-                    ONSConsumerList.ForEach(consumer =>
-                    {
-                        consumer.shutdown();
-                        DebugUtil.Debug("ConsumerId（" + consumer.Type.ToString() + @"）:" + consumer.ConsumerId + @"消费者.shutdown()");
-                    });
+                    //记录本地错误日志
+                    DebugUtil.Debug(_Environment + "." + _ApplicationAlias + ".ONSHelper.Destroy出错：" + e.ToString());
+
+                    //记录FATAL日志，发送FATAL目前出错
+                    //SaveLog(LogTypeEnum.FATAL, "ONSHelper", "Destroy", _Environment + "." + _ApplicationAlias + ".ONSHelper.Destroy出错：" + e.ToString());
+
+                    //发送邮件
+                    SendDebugMail(_Environment + "." + _ApplicationAlias + ".ONSHelper.Destroy出错", "：" + e.ToString());
                 }
             }
         }
         #endregion
 
+        #region 初始化属性
         /// <summary>
         /// 初始化属性
         /// </summary>
@@ -181,7 +212,7 @@ namespace RocketTester.ONS
                             {
                                 if (type.BaseType.FullName != null)
                                 {
-                                    
+
                                     //获取当前应用作为"事务"类型生产者的相关信息
                                     CreateProducer<AbstractTranProducerService<object>>(assembly, type, ONSMessageType.TRAN, (onsProducerFactoryProperty, topic, producerId) =>
                                     {
@@ -214,30 +245,30 @@ namespace RocketTester.ONS
                                     //*/
 
                                     //获取当前应用作为"事务"类型消费者的相关信息
-                                    CreateConsumer<AbstractTranConsumerService<object>>(assembly, type, ONSMessageType.TRAN, (onsConsumerFactoryProperty, topic, consumerId) =>
+                                    CreateConsumer<AbstractTranConsumerService<object>>(assembly, type, ONSMessageType.TRAN, (onsConsumerFactoryProperty, topic, consumerId, classType) =>
                                     {
                                         //实例化PushConsumer
                                         PushConsumer pushConsumer = ONSFactory.getInstance().createPushConsumer(onsConsumerFactoryProperty);
                                         //实例化代理类ONSTransactionConsumer
-                                        return new ONSTranConsumer(topic, consumerId, pushConsumer);
+                                        return new ONSTranConsumer(topic, consumerId, pushConsumer, classType);
                                     });
 
                                     //获取当前应用作为"顺序"类型消费者的相关信息
-                                    CreateConsumer<AbstractOrderConsumerService<object>>(assembly, type, ONSMessageType.ORDER, (onsConsumerFactoryProperty, topic, consumerId) =>
+                                    CreateConsumer<AbstractOrderConsumerService<object>>(assembly, type, ONSMessageType.ORDER, (onsConsumerFactoryProperty, topic, consumerId, classType) =>
                                     {
                                         //实例化OrderConsumer
                                         OrderConsumer orderConsumer = ONSFactory.getInstance().createOrderConsumer(onsConsumerFactoryProperty);
                                         //实例化代理类ONSOrderConsumer
-                                        return new ONSOrderConsumer(topic, consumerId, orderConsumer);
+                                        return new ONSOrderConsumer(topic, consumerId, orderConsumer, classType);
                                     });
 
                                     //获取当前应用作为"普通"类型消费者的相关信息
-                                    CreateConsumer<AbstractBaseConsumerService<object>>(assembly, type, ONSMessageType.BASE, (onsConsumerFactoryProperty, topic, consumerId) =>
+                                    CreateConsumer<AbstractBaseConsumerService<object>>(assembly, type, ONSMessageType.BASE, (onsConsumerFactoryProperty, topic, consumerId, classType) =>
                                     {
                                         //实例化PushConsumer
                                         PushConsumer pushConsumer = ONSFactory.getInstance().createPushConsumer(onsConsumerFactoryProperty);
                                         //实例化代理类ONSTransactionConsumer
-                                        return new ONSBaseConsumer(topic, consumerId, pushConsumer);
+                                        return new ONSBaseConsumer(topic, consumerId, pushConsumer, classType);
                                     });
                                 }
                             }
@@ -246,8 +277,17 @@ namespace RocketTester.ONS
                 }
             }
         }
+        #endregion
 
-        //*
+        #region 创建生产者实例
+        /// <summary>
+        /// 创建生产者实例
+        /// </summary>
+        /// <typeparam name="T">生产者服务基类类型</typeparam>
+        /// <param name="assembly">生产者服务类所在程序集</param>
+        /// <param name="type">生产者服务类的类型</param>
+        /// <param name="messageType">消息类型BASE，ORDER，TRAN</param>
+        /// <param name="func">生成生产者实例的委托代码</param>
         internal static void CreateProducer<T>(Assembly assembly, Type type, ONSMessageType messageType, Func<ONSFactoryProperty, string, string, IONSProducer> func)
         {
             if (type.BaseType.FullName.IndexOf(typeof(T).Name) >= 0)
@@ -275,7 +315,7 @@ namespace RocketTester.ONS
                         onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.SecretKey, _AliyunOnsSecretKey);
                         onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.ProducerId, producerId);
                         onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.PublishTopics, topic);
-                        //onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.LogPath, "D://log/rocketmq/producer");
+                        onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.LogPath, "D://log/rocketmq/producer");
 
                         //获取生产者IONSProducer
                         producer = func(onsProducerFactoryProperty, topic, producerId);
@@ -289,9 +329,18 @@ namespace RocketTester.ONS
                 }
             }
         }
-        //*/
+        #endregion
 
-        internal static void CreateConsumer<T>(Assembly assembly, Type type, ONSMessageType messageType, Func<ONSFactoryProperty, string, string, IONSConsumer> func)
+        #region 生成消费者实例
+        /// <summary>
+        /// 生成消费者实例
+        /// </summary>
+        /// <typeparam name="T">消费者服务基类类型</typeparam>
+        /// <param name="assembly">消费者服务类所在程序集</param>
+        /// <param name="type">消费者服务类的类型</param>
+        /// <param name="messageType">消息类型BASE，ORDER，TRAN</param>
+        /// <param name="func">生成消费者实例的委托代码</param>
+        internal static void CreateConsumer<T>(Assembly assembly, Type type, ONSMessageType messageType, Func<ONSFactoryProperty, string, string, Type, IONSConsumer> func)
         {
             if (type.BaseType.FullName.IndexOf(typeof(T).Name) >= 0)
             {
@@ -310,10 +359,12 @@ namespace RocketTester.ONS
                     {
                         string serviceTopic = topicTag.GetType().Name;
                         string serviceTag = topicTag.ToString();
-
+                        string className = type.Name;
 
                         string topic = (_Environment + "_" + serviceTopic).ToUpper();
-                        string consumerId = ("CID_" + topic + "_" + _ApplicationAlias).ToUpper();
+                        string consumerId = ("CID_" + topic + "_" + _ApplicationAlias + "_" + className).ToUpper();
+
+                        DebugUtil.Debug("consumerId:" + consumerId);
 
                         IONSConsumer consumer = ONSConsumerList.Where(c => c.Type == messageType.ToString() && c.ConsumerId == consumerId).FirstOrDefault();
                         if (consumer == null)
@@ -324,10 +375,10 @@ namespace RocketTester.ONS
                             onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.SecretKey, _AliyunOnsSecretKey);
                             onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.ConsumerId, consumerId);
                             //onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.PublishTopics, _ONSTopic);
-                            //onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.LogPath, "D://log/rocketmq/consumer");
+                            onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.LogPath, "D://log/rocketmq/consumer");
 
                             //获取消费者IONSConsumer
-                            consumer = func(onsConsumerFactoryProperty, topic, consumerId);
+                            consumer = func(onsConsumerFactoryProperty, topic, consumerId, type);
 
                             //记录消费者初始化信息
                             DebugUtil.Debug("Topic：" + topic + "，ConsumerId（" + consumer.Type + "）：" + consumer.ConsumerId + "消费者.new()");
@@ -344,6 +395,7 @@ namespace RocketTester.ONS
                 }
             }
         }
+        #endregion
 
         /// <summary>
         /// 获取字符串格式的标签列表
@@ -364,6 +416,50 @@ namespace RocketTester.ONS
                 }
             }
             return consumerTags;
+        }
+
+        /// <summary>
+        /// 记录日志（建议在有上下文的环境下使用，否则可能会报错）
+        /// </summary>
+        /// <param name="logType">日志类型TRACE，INFO，ERROR，FATAL</param>
+        /// <param name="className">哪个类中出错</param>
+        /// <param name="methodName">哪个方法中出错</param>
+        /// <param name="content">日志内容</param>
+        public static void SaveLog(LogTypeEnum logType, string className, string methodName, string content)
+        {
+            try
+            {
+                LogParameter logParameter = new LogParameter();
+                logParameter.LogType = logType;
+                logParameter.ClassName = className;
+                logParameter.MethodName = methodName;
+                logParameter.LogMessage = content;
+                NestLogHelper.WriteLog(logParameter);
+            }
+            catch (Exception esError)
+            {
+                //发送es日志异常
+                DebugUtil.Debug(content + "，尝试发送es的FATAL日志时发生异常：" + esError.ToString());
+            }
+        }
+
+        /// <summary>
+        /// 发送DEBUG邮件，一般在发生严重FATAL错误时，需要发送邮件通知该网站相关人员
+        /// </summary>
+        /// <param name="subject">邮件主题</param>
+        /// <param name="body">邮件内容</param>
+        public static void SendDebugMail(string subject, string body)
+        {
+            try
+            {
+                string resultMessage = "";
+                MailUtil.SendDebugMail(subject, body, out resultMessage);
+            }
+            catch (Exception mailError)
+            {
+                //发送邮件错误
+                DebugUtil.Debug(subject +"，"+ body + "，尝试发送邮件时发生异常：" + mailError.ToString());
+            }
         }
     }
 }

@@ -15,16 +15,16 @@ namespace RocketTester.ONS
 {
     public abstract class AbstractProducerService<T> : IAbstractProducerService
     {
+        //获取当前环境，p代表生产环境production，s代表测试环境staging，d代表开发环境development
+        protected static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "p";
+        //应用别名
+        protected static string _ApplicationAlias = ConfigurationManager.AppSettings["ApplicationAlias"] ?? "unknown";
         //获取是否允许发送消息，此开关用于初次上线正式时，由于要观察一段时间，因此AliyunOnsIsEnabled是"1"，但是AliyunOnsIsAllowedToSend是"0"
         protected static string _AliyunOnsIsAllowedToSend = ConfigurationManager.AppSettings["AliyunOnsIsAllowedToSend"] ?? "1";
         //获取RAM控制台消息队列账号的AccessKey
         static string _AliyunOnsAccessKey = ConfigurationManager.AppSettings["AliyunOnsAccessKey"] ?? "";
         //获取RAM控制台消息队列账号的SecretKey
         static string _AliyunOnsSecretKey = ConfigurationManager.AppSettings["AliyunOnsSecretKey"] ?? "";
-        //获取当前环境，p代表生产环境production，s代表测试环境staging，d代表开发环境development
-        static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "p";
-        //应用别名
-        static string _ApplicationAlias = ConfigurationManager.AppSettings["ApplicationAlias"] ?? "unknown";
         //锁的帮助实例
         static object _lockHelper = new object();
 

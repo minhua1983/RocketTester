@@ -24,9 +24,11 @@ namespace RocketTester.ONS
         static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "p";
         static string _ApplicationAlias = ConfigurationManager.AppSettings["ApplicationAlias"] ?? "unknown";
 
-        public ONSMessageListener()
-        {
+        public Type ClassType { get; private set; }
 
+        public ONSMessageListener(Type type)
+        {
+            this.ClassType = type;
         }
 
         ~ONSMessageListener()
@@ -48,7 +50,7 @@ namespace RocketTester.ONS
 
             DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",consume...");
 
-            bool needToCommit = ListenerHelper.React(value);
+            bool needToCommit = ListenerHelper.React(value, this.ClassType);
 
             Action action;
             if (needToCommit)

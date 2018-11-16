@@ -14,7 +14,7 @@ namespace RocketTester.ONS
 
         }
 
-        public static bool SendMessage(Enum topicTag, string shardingKey, T model)
+        public static bool SendMq(Enum topicTag, string shardingKey, T model)
         {
             OrderProducerService<T> service = new OrderProducerService<T>(topicTag);
             return service.Process(model, shardingKey);

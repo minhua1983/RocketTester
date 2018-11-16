@@ -30,10 +30,16 @@ namespace RocketTester.ONS
         /// </summary>
         public string Type { get; private set; }
 
+        /// <summary>
+        /// 自定义属性ClassType对应消费实例的类型
+        /// </summary>
+        public Type ClassType { get; private set; }
+
         OrderConsumer _consumer;
 
-        public ONSOrderConsumer(string topic, string consumerId, OrderConsumer consumer)
+        public ONSOrderConsumer(string topic, string consumerId, OrderConsumer consumer, Type classType)
         {
+            ClassType = classType;
             Type = ONSMessageType.ORDER.ToString();
             Topic = topic;
             ConsumerId = consumerId;
@@ -57,7 +63,7 @@ namespace RocketTester.ONS
 
         public void subscribe(string topic, string tags)
         {
-            ONSMessageOrderListener listener = new ONSMessageOrderListener();
+            ONSMessageOrderListener listener = new ONSMessageOrderListener(ClassType);
             _consumer.subscribe(topic, tags, listener);
         }
     }

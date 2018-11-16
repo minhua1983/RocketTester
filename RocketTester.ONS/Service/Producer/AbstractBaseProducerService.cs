@@ -54,9 +54,27 @@ namespace RocketTester.ONS
                 message.putUserProperties("requestTraceId", requestTraceId);
                 //message.putUserProperties("shardingKey", shardingKey);
                 //发送消息
-                SendResultONS sendResultONS = producer.send(message, null);
-                accomplishment = 1;
-                producedTimes = 1;
+                SendResultONS sendResultONS = null;
+                try
+                {
+                    sendResultONS = producer.send(message, null);
+                    accomplishment = 1;
+                    producedTimes = 1;
+                }
+                catch (Exception e)
+                {
+                    string className = this.GetType().Name;
+                    string methodName = "Process";
+
+                    //记录本地错误日志
+                    DebugUtil.Debug(_Environment + "." + _ApplicationAlias + "." + className + "." + methodName + "出错，key=" + key + "：" + e.ToString());
+
+                    //记录FATAL日志
+                    ONSHelper.SaveLog(LogTypeEnum.FATAL, className, methodName, _Environment + "." + _ApplicationAlias + "." + className + "." + methodName + "出错，key=" + key + "：" + e.ToString());
+
+                    //发送邮件
+                    ONSHelper.SendDebugMail(_Environment + "." + _ApplicationAlias + "." + className + "." + methodName + "出错", "key=" + key + "：" + e.ToString());
+                }
                 if (sendResultONS == null)
                 {
                     throw new Exception("发送BASE消息失败。");

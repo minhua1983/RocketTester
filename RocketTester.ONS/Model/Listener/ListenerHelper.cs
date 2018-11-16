@@ -23,7 +23,7 @@ namespace RocketTester.ONS
         static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "p";
         static string _ApplicationAlias = ConfigurationManager.AppSettings["ApplicationAlias"] ?? "unknown";
 
-        public static bool React(Message value)
+        public static bool React(Message value, Type classType)
         {
             bool needToCommit = false;
             string failureReason = "";
@@ -46,7 +46,7 @@ namespace RocketTester.ONS
                 topic = value.getTopic();
                 tag = value.getTag();
                 pid = "PID_" + value.getTopic().ToUpper();
-                cid = ("CID_" + topic + "_" + _ApplicationAlias).ToUpper();
+                cid = ("CID_" + topic + "_" + _ApplicationAlias + "_" + classType.Name).ToUpper();
                 key = value.getKey();
                 type = value.getUserProperties("type");
                 body = value.getMsgBody();
@@ -56,9 +56,11 @@ namespace RocketTester.ONS
 
                 object parameter;
 
+                /*
                 //在ONSConsumerServiceList中找到能匹配TopicTag的消费者服务类实例
                 object service = ONSHelper.ONSConsumerServiceList.Where(s =>
                 {
+                    string className = s.GetType().Name;
                     IAbstractConsumerService iservice = (IAbstractConsumerService)s;
                     Enum[] topicTagList = iservice.TopicTagList;
                     if (topicTagList != null)
@@ -78,6 +80,9 @@ namespace RocketTester.ONS
                     }
                     return false;
                 }).FirstOrDefault();
+                //*/
+
+                object service = ONSHelper.ONSConsumerServiceList.Where(s => s.GetType().Name == classType.Name).FirstOrDefault();
 
                 //如果消费者服务类实例存在则消费消息
                 if (service != null)
@@ -138,33 +143,26 @@ namespace RocketTester.ONS
                 RedisTool RT = new RedisTool(_AliyunOnsRedisDbNumber, _RedisExchangeHosts);
                 if (RT != null)
                 {
-                    if (topicTag != null)
-                    {
-                        string consumedTimesKey = key + "_" + cid + "_consumedtimes";
-                        string consumedTimesValue = RT.StringGet(consumedTimesKey);
+                    string consumedTimesKey = key + "_" + cid + "_consumedtimes";
+                    string consumedTimesValue = RT.StringGet(consumedTimesKey);
 
-                        if (string.IsNullOrEmpty(consumedTimesValue))
+                    if (string.IsNullOrEmpty(consumedTimesValue))
+                    {
+                        //不存在key，则新增
+                        consumedTimes++;
+                        bool isSaved = RT.StringSet(consumedTimesKey, consumedTimes, TimeSpan.FromSeconds(_AliyunOnsRedisServiceResultExpireIn));
+                        if (!isSaved)
                         {
-                            //不存在key，则新增
-                            consumedTimes++;
-                            bool isSaved = RT.StringSet(consumedTimesKey, consumedTimes, TimeSpan.FromSeconds(_AliyunOnsRedisServiceResultExpireIn));
-                            if (!isSaved)
-                            {
-                                //设置消费次数失败
-                                failureReason = "设置消费次数失败。";
-                            }
-                        }
-                        else
-                        {
-                            //存在key，则递增
-                            int.TryParse(consumedTimesValue, out consumedTimes);
-                            consumedTimes++;
-                            RT.StringIncrement(consumedTimesKey);
+                            //设置消费次数失败
+                            failureReason = "设置消费次数失败。";
                         }
                     }
                     else
                     {
-                        failureReason = "未在ONSConsumerServiceList中找到匹配的TopicTag。";
+                        //存在key，则递增
+                        int.TryParse(consumedTimesValue, out consumedTimes);
+                        consumedTimes++;
+                        RT.StringIncrement(consumedTimesKey);
                     }
                 }
                 else
