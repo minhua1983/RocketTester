@@ -87,16 +87,12 @@ namespace RocketTester.ONS
                 //如果消费者服务类实例存在则消费消息
                 if (service != null)
                 {
+                    //获取消费服务类的核心方法（即开发者自己实现的方法）
                     method = service.GetType().FullName + ".ProcessCore";
-                    //var parameter = service.ConvertStringToType(data);
-
+                    //获取内部方法（此方法是受保护的，因此获取MethodInfo复杂一些）
                     MethodInfo methodInfo = service.GetType().GetMethod("InternalProcess", BindingFlags.NonPublic | BindingFlags.Instance);
-                    //MethodInfo methodInfo = type.GetMethod("InternalProcess");
-
+                    //获取参数列表，实际就一个泛型T参数
                     ParameterInfo[] parameterInfos = methodInfo.GetParameters();
-
-                    DebugUtil.Debug(parameterInfos[0].ParameterType.ToString());
-
                     //判断类型
                     if (parameterInfos[0].ParameterType.ToString().ToLower() == "system.string")
                     {
@@ -108,7 +104,6 @@ namespace RocketTester.ONS
                         //自定义类型
                         parameter = JsonConvert.DeserializeObject(body, parameterInfos[0].ParameterType);
                     }
-
                     //执行InternalProcess方法
                     needToCommit = (bool)methodInfo.Invoke(service, new object[] { parameter });
 
@@ -116,9 +111,6 @@ namespace RocketTester.ONS
                     {
                         failureReason = method + "执行返回false，可能是该方法逻辑上返回false，也可能是该方法执行时它自己捕捉到错误返回false";
                     }
-
-                    //needToCommit = service.Consume(data);
-                    DebugUtil.Debug("MESSAGE_KEY:" + key + ",needToCommit:" + needToCommit + "\n");
                 }
                 else
                 {
@@ -128,12 +120,8 @@ namespace RocketTester.ONS
             }
             catch (Exception e)
             {
-                //如果大量错误导致消息堆积，可以这里设置为true，但是还是不建议这样做，因为一般是因为Redis里面key的值发生了结构变化，在进行json反序列化时出错导致，此时如果设置为true，但是下游业务还未执行，这样从流程上来说是有问题的，应该第一时间发现，并把旧格式的数据，修改为新格式的数据，之后重新尝试发送到下游后即可消费。
-
-                //也不能手动删除redis中的key，否则导致JsonConvert.DeserializeObject<TransactionResult>(result)出错
-                //needToCommit = true; 
                 failureReason = "尝试消费时，key=" + key + "，捕获异常：" + e.ToString();
-                DebugUtil.Debug(e.ToString());
+                //DebugUtil.Debug(e.ToString());
             }
             //*/
 
@@ -173,28 +161,35 @@ namespace RocketTester.ONS
             catch (Exception e)
             {
                 failureReason = "尝试通过redis更新生产方法执行次数时，捕捉异常：" + e.ToString();
-                DebugUtil.Debug(e.ToString());
+                //DebugUtil.Debug(e.ToString());
             }
             finally
             {
-                //写ConsumerData数据
-                ConsumerData consumerData = new ConsumerData(requestTraceId);
-                //string data;
-                consumerData.ApplicationAlias = _ApplicationAlias;
-                consumerData.Accomplishment = needToCommit ? 1 : 0;
-                consumerData.Topic = topic;
-                consumerData.Tag = tag;
-                consumerData.ProducerId = pid;
-                consumerData.ConsumerId = cid;
-                consumerData.Key = key;
-                consumerData.Type = type;
-                consumerData.Message = body;
-                consumerData.Method = method;
-                consumerData.FailureReason = failureReason;
-                consumerData.ConsumedStatus = needToCommit ? "Commit" : "Reconsume";
-                consumerData.ConsumedTimes = consumedTimes;
-                consumerData.ShardingKey = shardingKey;
-                NestDataHelper.WriteData(consumerData);
+                try
+                {
+                    //写ConsumerData数据
+                    ConsumerData consumerData = new ConsumerData(requestTraceId);
+                    //string data;
+                    consumerData.ApplicationAlias = _ApplicationAlias;
+                    consumerData.Accomplishment = needToCommit;
+                    consumerData.Topic = topic;
+                    consumerData.Tag = tag;
+                    consumerData.ProducerId = pid;
+                    consumerData.ConsumerId = cid;
+                    consumerData.Key = key;
+                    consumerData.Type = type;
+                    consumerData.Message = body;
+                    consumerData.Method = method;
+                    consumerData.FailureReason = failureReason;
+                    consumerData.ConsumedStatus = needToCommit ? "Commit" : "Reconsume";
+                    consumerData.ConsumedTimes = consumedTimes;
+                    consumerData.ShardingKey = shardingKey;
+                    NestDataHelper.WriteData(consumerData);
+                }
+                catch (Exception e)
+                {
+                    ONSHelper.SendDebugMail(_Environment + "." + _ApplicationAlias + "环境发送下游消费日志失败", "消息key:"+key+"，错误信息如下："+e.ToString());
+                }
             }
 
             return needToCommit;

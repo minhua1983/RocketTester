@@ -40,7 +40,10 @@ namespace RocketTester.ONS
         /// </summary>
         public void start()
         {
-            _producer.start();
+            if (_producer != null)
+            {
+                _producer.start();
+            }
         }
 
         /// <summary>
@@ -48,11 +51,10 @@ namespace RocketTester.ONS
         /// </summary>
         public void shutdown()
         {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            _producer.shutdown();
-            stopwatch.Stop();
-            DebugUtil.Debug("ONSProducer spent " + stopwatch.ElapsedMilliseconds + " on shutdown.");
+            if (_producer != null)
+            {
+                _producer.shutdown();
+            }
         }
 
         /// <summary>

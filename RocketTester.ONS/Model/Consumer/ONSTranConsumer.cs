@@ -35,7 +35,15 @@ namespace RocketTester.ONS
         /// </summary>
         public Type ClassType { get; private set; }
 
+        /// <summary>
+        /// 原始消费者实例
+        /// </summary>
         PushConsumer _consumer;
+
+        /// <summary>
+        /// 监听者实例（即真正消费处理底层核心类）
+        /// </summary>
+        ONSMessageListener _listener;
 
         public ONSTranConsumer(string topic, string consumerId, PushConsumer consumer, Type classType)
         {
@@ -49,22 +57,24 @@ namespace RocketTester.ONS
 
         public void start()
         {
-            _consumer.start();
+            if (_consumer != null)
+            {
+                _consumer.start();
+            }
         }
 
         public void shutdown()
         {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            _consumer.shutdown();
-            stopwatch.Stop();
-            DebugUtil.Debug("ONSTransactionConsumer spent " + stopwatch.ElapsedMilliseconds + " on shutdown.");
+            if (_consumer != null)
+            {
+                _consumer.shutdown();
+            }
         }
 
         public void subscribe(string topic, string tags)
         {
-            ONSMessageListener listener = new ONSMessageListener(ClassType);
-            _consumer.subscribe(topic, tags, listener);
+            _listener = new ONSMessageListener(ClassType);
+            _consumer.subscribe(topic, tags, _listener);
         }
     }
 }

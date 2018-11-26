@@ -77,6 +77,10 @@ namespace RocketTester.ONS
             return key;
         }
 
+
+
+
+
         /// <summary>
         /// 记录日志
         /// </summary>
@@ -85,7 +89,24 @@ namespace RocketTester.ONS
         /// <param name="shardingKey">顺序消息要用的shardingKey，其他消息留空字符串</param>
         /// <param name="transactionStatus">事务消息的返回类型，其他消息留空字符串</param>
         /// <param name="failureReason">失败原因，通常有错误时会写入错误原因</param>
-        protected void LogData(string key, string message, string shardingKey, string transactionStatus, string failureReason, int accomplishment, int producedTimes,bool serviceResult)
+        /// 
+
+
+
+
+
+        /// <summary>
+        /// 记录日志
+        /// </summary>
+        /// <param name="key">消息的key</param>
+        /// <param name="message">消息的正文内容，即model序列化后的内容</param>
+        /// <param name="shardingKey">顺序消息要用的shardingKey，其他消息留空字符串</param>
+        /// <param name="transactionStatus">事务消息的返回类型，其他消息留空字符串</param>
+        /// <param name="failureReason">失败原因，通常有错误时会写入错误原因</param>
+        /// <param name="accomplishment">是否已经完成消息</param>
+        /// <param name="producedTimes">上游执行次数</param>
+        /// <param name="serviceResult">上游执行结果</param>
+        protected void LogData(string key, string message, string shardingKey, string transactionStatus, string failureReason, bool accomplishment, int producedTimes,bool serviceResult)
         {
             try
             {

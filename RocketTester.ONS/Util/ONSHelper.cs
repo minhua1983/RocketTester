@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Collections.Concurrent;
 using System.Configuration;
 using System.Text;
+using System.Threading;
+using System.IO;
 using ons;
 using Redis.Framework;
 using Newtonsoft.Json;
@@ -66,6 +68,10 @@ namespace RocketTester.ONS
         static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "s";
         //获取当前应用的别名
         static string _ApplicationAlias = ConfigurationManager.AppSettings["ApplicationAlias"] ?? "unknown";
+        //获取生产者sdk日志路径
+        static string _AliyunOnsProducerLogPath = ConfigurationManager.AppSettings["AliyunOnsProducerLogPath"] ?? "";
+        //获取消费者sdk日志路径
+        static string _AliyunOnsConsumerLogPath = ConfigurationManager.AppSettings["AliyunOnsConsumerLogPath"] ?? "";
         #endregion
 
         #region Initialize 方法
@@ -116,6 +122,10 @@ namespace RocketTester.ONS
                             });
                         }
                     }
+
+                    //延时若干毫秒
+                    Thread.Sleep(1000);
+                    DebugUtil.Debug(_Environment + "." + _ApplicationAlias + ".ONSHelper.Initialize最后延迟1000毫秒");
                 }
                 catch (Exception e)
                 {
@@ -147,7 +157,8 @@ namespace RocketTester.ONS
                         ONSProducerList.ForEach(producer =>
                         {
 
-                            //关闭上游事务消息生产者
+                            //关闭上游消息生产者
+                            DebugUtil.Debug("ProducerId（" + producer.Type.ToString() + @"）:" + producer.ProducerId + @"生产者.准备shutdown()");
                             producer.shutdown();
                             DebugUtil.Debug("ProducerId（" + producer.Type.ToString() + @"）:" + producer.ProducerId + @"生产者.shutdown()");
                         });
@@ -157,6 +168,8 @@ namespace RocketTester.ONS
                     {
                         ONSConsumerList.ForEach(consumer =>
                         {
+                            //关闭下游消息消费者
+                            DebugUtil.Debug("ConsumerId（" + consumer.Type.ToString() + @"）:" + consumer.ConsumerId + @"消费者.准备shutdown()");
                             consumer.shutdown();
                             DebugUtil.Debug("ConsumerId（" + consumer.Type.ToString() + @"）:" + consumer.ConsumerId + @"消费者.shutdown()");
                         });
@@ -173,6 +186,10 @@ namespace RocketTester.ONS
                     //发送邮件
                     SendDebugMail(_Environment + "." + _ApplicationAlias + ".ONSHelper.Destroy出错", "：" + e.ToString());
                 }
+
+                //延时若干毫秒
+                Thread.Sleep(1000);
+                DebugUtil.Debug(_Environment + "." + _ApplicationAlias + ".ONSHelper.Destroy最后延迟1000毫秒");
             }
         }
         #endregion
@@ -196,6 +213,10 @@ namespace RocketTester.ONS
             //实例化Checker方法对应的委托实例字典
             CheckerMethodDictionary = new ConcurrentDictionary<string, MethodInfo>();
 
+
+            
+
+            //*
             //获取当前应用域下的所有程序集
             Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
             //找出所有程序集下带有[ONSConsumer]特性的所有方法，并放入自定义消费者方法列表中
@@ -224,25 +245,23 @@ namespace RocketTester.ONS
                                         return new ONSTranProducer(topic, producerId, transactionProducer);
                                     });
 
-                                    /*
-                                    //获取当前应用作为"顺序"类型生产者的相关信息
-                                    CreateProducer<AbstractOrderProducerService<object>>(assembly, type, ONSMessageType.ORDER, (onsProducerFactoryProperty, topic, producerId) =>
-                                    {
-                                        //实例化OrderProducer
-                                        OrderProducer orderProducer = ONSFactory.getInstance().createOrderProducer(onsProducerFactoryProperty);
-                                        //实例化代理类ONSOrderProducer
-                                        return new ONSOrderProducer(topic, producerId, orderProducer);
-                                    });
+                                    ////获取当前应用作为"顺序"类型生产者的相关信息
+                                    //CreateProducer<AbstractOrderProducerService<object>>(assembly, type, ONSMessageType.ORDER, (onsProducerFactoryProperty, topic, producerId) =>
+                                    //{
+                                    //    //实例化OrderProducer
+                                    //    OrderProducer orderProducer = ONSFactory.getInstance().createOrderProducer(onsProducerFactoryProperty);
+                                    //    //实例化代理类ONSOrderProducer
+                                    //    return new ONSOrderProducer(topic, producerId, orderProducer);
+                                    //});
 
-                                    //获取当前应用作为"普通"类型生产者的相关信息
-                                    CreateProducer<AbstractBaseProducerService<object>>(assembly, type, ONSMessageType.BASE, (onsProducerFactoryProperty, topic, producerId) =>
-                                    {
-                                        //实例化Producer
-                                        Producer baseProducer = ONSFactory.getInstance().createProducer(onsProducerFactoryProperty);
-                                        //实例化代理类ONSProducer
-                                        return new ONSBaseProducer(topic, producerId, baseProducer);
-                                    });
-                                    //*/
+                                    ////获取当前应用作为"普通"类型生产者的相关信息
+                                    //CreateProducer<AbstractBaseProducerService<object>>(assembly, type, ONSMessageType.BASE, (onsProducerFactoryProperty, topic, producerId) =>
+                                    //{
+                                    //    //实例化Producer
+                                    //    Producer baseProducer = ONSFactory.getInstance().createProducer(onsProducerFactoryProperty);
+                                    //    //实例化代理类ONSProducer
+                                    //    return new ONSBaseProducer(topic, producerId, baseProducer);
+                                    //});
 
                                     //获取当前应用作为"事务"类型消费者的相关信息
                                     CreateConsumer<AbstractTranConsumerService<object>>(assembly, type, ONSMessageType.TRAN, (onsConsumerFactoryProperty, topic, consumerId, classType) =>
@@ -276,6 +295,7 @@ namespace RocketTester.ONS
                     }
                 }
             }
+            //*/
         }
         #endregion
 
@@ -315,7 +335,14 @@ namespace RocketTester.ONS
                         onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.SecretKey, _AliyunOnsSecretKey);
                         onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.ProducerId, producerId);
                         onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.PublishTopics, topic);
-                        onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.LogPath, "D://log/rocketmq/producer");
+
+                        if (_AliyunOnsProducerLogPath != "")
+                        {
+                            if (Directory.Exists(_AliyunOnsProducerLogPath))
+                            {
+                                onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.LogPath, _AliyunOnsProducerLogPath);
+                            }
+                        }
 
                         //获取生产者IONSProducer
                         producer = func(onsProducerFactoryProperty, topic, producerId);
@@ -375,7 +402,14 @@ namespace RocketTester.ONS
                             onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.SecretKey, _AliyunOnsSecretKey);
                             onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.ConsumerId, consumerId);
                             //onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.PublishTopics, _ONSTopic);
-                            onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.LogPath, "D://log/rocketmq/consumer");
+
+                            if (_AliyunOnsConsumerLogPath != "")
+                            {
+                                if (Directory.Exists(_AliyunOnsConsumerLogPath))
+                                {
+                                    onsConsumerFactoryProperty.setFactoryProperty(ONSFactoryProperty.LogPath, _AliyunOnsConsumerLogPath);
+                                }
+                            }
 
                             //获取消费者IONSConsumer
                             consumer = func(onsConsumerFactoryProperty, topic, consumerId, type);

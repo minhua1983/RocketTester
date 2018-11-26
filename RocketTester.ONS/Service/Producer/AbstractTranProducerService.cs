@@ -37,7 +37,7 @@ namespace RocketTester.ONS
             string key = this.CreateMessageKey();
             string failureReason = "";
             string body = "";
-            int accomplishment = 0;
+            bool accomplishment = false;
             int producedTimes = 0;
             try
             {

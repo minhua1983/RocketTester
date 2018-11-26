@@ -185,7 +185,7 @@ namespace RocketTester.ONS
             finally
             {
                 ProducerData producerData = new ProducerData(requestTraceId);
-                producerData.Accomplishment = transactionStatus == TransactionStatus.CommitTransaction ? 1 : 0;
+                producerData.Accomplishment = transactionStatus != TransactionStatus.Unknow;
                 producerData.ApplicationAlias = _ApplicationAlias;
                 producerData.Topic = topic;
                 producerData.Tag = tag;

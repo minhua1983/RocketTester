@@ -33,7 +33,7 @@ namespace RocketTester.ONS
             string key = this.CreateMessageKey();
             string failureReason = "";
             string body = "";
-            int accomplishment = 0;
+            bool accomplishment = false;
             int producedTimes = 0;
             try
             {
@@ -58,7 +58,7 @@ namespace RocketTester.ONS
                 try
                 {
                     sendResultONS = producer.send(message, null);
-                    accomplishment = 1;
+                    accomplishment = true;
                     producedTimes = 1;
                 }
                 catch (Exception e)

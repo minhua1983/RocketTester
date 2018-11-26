@@ -18,7 +18,7 @@ namespace RocketTester.ONS
         }
 
         [JsonProperty("accomplishment")]
-        public int Accomplishment { get; set; }
+        public bool Accomplishment { get; set; }
 
         [JsonProperty("applicationAlias")]
         public string ApplicationAlias { get; set; }

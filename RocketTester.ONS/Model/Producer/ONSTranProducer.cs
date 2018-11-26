@@ -51,11 +51,10 @@ namespace RocketTester.ONS
         /// </summary>
         public void shutdown()
         {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            _producer.shutdown();
-            stopwatch.Stop();
-            DebugUtil.Debug("ONSTransactionProducer spent " + stopwatch.ElapsedMilliseconds + " on shutdown.");
+            if (_producer != null)
+            {
+                _producer.start();
+            }
         }
 
         /// <summary>

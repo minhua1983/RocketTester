@@ -26,32 +26,28 @@ namespace RocketTester.ONS
 
         public override OrderAction consume(Message value, ConsumeOrderContext context)
         {
-            /*
-            // Message 包含了消费到的消息，通过 getBody 接口可以拿到消息体
-            Console.WriteLine("time:" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-            Console.WriteLine("body:" + value.getMsgBody());
-            Console.WriteLine("funcReturn:" + value.getUserProperties("funcReturn"));
-            Console.WriteLine();
-            //*/
-            /*
-                   所有中文编码相关问题都在 SDK 压缩包包含的文档里做了说明，请仔细阅读
-            */
+            OrderAction action = ons.OrderAction.Suspend;
 
-            DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",consume...");
-
-            bool needToCommit = ListenerHelper.React(value, this.ClassType);
-
-            OrderAction action;
-
-            if (needToCommit)
+            try
             {
-                DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",ons.OrderAction.Success...\n");
-                action = ons.OrderAction.Success;
+                //DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",consume...");
+
+                bool needToCommit = ListenerHelper.React(value, this.ClassType);
+
+                if (needToCommit)
+                {
+                    //DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",ons.OrderAction.Success...\n");
+                    action = ons.OrderAction.Success;
+                }
+                else
+                {
+                    //DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",ons.OrderAction.Suspend;...\n");
+                    action = ons.OrderAction.Suspend;
+                }
             }
-            else
+            catch (Exception e)
             {
-                DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",ons.OrderAction.Suspend;...\n");
-                action = ons.OrderAction.Suspend;
+                DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",error:" + e.ToString());
             }
 
             return action;

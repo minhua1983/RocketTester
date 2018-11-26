@@ -18,12 +18,6 @@ namespace RocketTester.ONS
     /// </summary>
     public class ONSMessageListener : MessageListener
     {
-        static string _RedisExchangeHosts = ConfigurationManager.AppSettings["RedisExchangeHosts"] ?? "";
-        static int _AliyunOnsRedisDbNumber = string.IsNullOrEmpty(ConfigurationManager.AppSettings["AliyunOnsRedisDbNumber"]) ? 11 : int.Parse(ConfigurationManager.AppSettings["AliyunOnsRedisDbNumber"]);
-        static int _AliyunOnsRedisServiceResultExpireIn = string.IsNullOrEmpty(ConfigurationManager.AppSettings["AliyunOnsRedisServiceResultExpireIn"]) ? 86400 : int.Parse(ConfigurationManager.AppSettings["AliyunOnsRedisServiceResultExpireIn"]);
-        static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "p";
-        static string _ApplicationAlias = ConfigurationManager.AppSettings["ApplicationAlias"] ?? "unknown";
-
         public Type ClassType { get; private set; }
 
         public ONSMessageListener(Type type)
@@ -37,34 +31,32 @@ namespace RocketTester.ONS
 
         public override Action consume(Message value, ConsumeContext context)
         {
-            /*
-            // Message 包含了消费到的消息，通过 getBody 接口可以拿到消息体
-            Console.WriteLine("time:" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-            Console.WriteLine("body:" + value.getMsgBody());
-            Console.WriteLine("funcReturn:" + value.getUserProperties("funcReturn"));
-            Console.WriteLine();
-            //*/
-            /*
-                   所有中文编码相关问题都在 SDK 压缩包包含的文档里做了说明，请仔细阅读
-            */
-
-            DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",consume...");
-
-            bool needToCommit = ListenerHelper.React(value, this.ClassType);
-
-            Action action;
-            if (needToCommit)
+            Action action = ons.Action.ReconsumeLater;
+            
+            try
             {
-                DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",ons.Action.CommitMessage...\n");
-                action = ons.Action.CommitMessage;
-            }
-            else
-            {
-                DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",ons.Action.ReconsumeLater...\n");
-                action = ons.Action.ReconsumeLater;
-            }
+                //DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",consume...");
 
+                bool needToCommit = ListenerHelper.React(value, this.ClassType);
+
+                if (needToCommit)
+                {
+                    //DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",ons.Action.CommitMessage...\n");
+                    action = ons.Action.CommitMessage;
+                }
+                else
+                {
+                    //DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",ons.Action.ReconsumeLater...\n");
+                    action = ons.Action.ReconsumeLater;
+                }
+            }
+            catch (Exception e)
+            {
+                DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",error:" + e.ToString());
+            }
             return action;
+
+            return ons.Action.CommitMessage;
         }
     }
 }
