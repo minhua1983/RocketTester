@@ -77,24 +77,6 @@ namespace RocketTester.ONS
             return key;
         }
 
-
-
-
-
-        /// <summary>
-        /// 记录日志
-        /// </summary>
-        /// <param name="key">消息的key</param>
-        /// <param name="message">消息的正文内容，即model序列化后的内容</param>
-        /// <param name="shardingKey">顺序消息要用的shardingKey，其他消息留空字符串</param>
-        /// <param name="transactionStatus">事务消息的返回类型，其他消息留空字符串</param>
-        /// <param name="failureReason">失败原因，通常有错误时会写入错误原因</param>
-        /// 
-
-
-
-
-
         /// <summary>
         /// 记录日志
         /// </summary>
@@ -106,7 +88,7 @@ namespace RocketTester.ONS
         /// <param name="accomplishment">是否已经完成消息</param>
         /// <param name="producedTimes">上游执行次数</param>
         /// <param name="serviceResult">上游执行结果</param>
-        protected void LogData(string key, string message, string shardingKey, string transactionStatus, string failureReason, bool accomplishment, int producedTimes,bool serviceResult)
+        protected void LogData(string key, string message, string shardingKey, string transactionStatus, string failureReason, bool accomplishment, int producedTimes, bool serviceResult)
         {
             try
             {
@@ -210,6 +192,69 @@ namespace RocketTester.ONS
                 }
             }
             return requestTraceId;
+        }
+
+        /// <summary>
+        /// 尝试发送消息
+        /// </summary>
+        /// <param name="producer">生产者实例</param>
+        /// <param name="message">消息实例</param>
+        /// <param name="parameter">发送所需参数</param>
+        /// <param name="key">消息的唯一标识</param>
+        /// <param name="errorTimes">本系统自己自己执行时发现出错后，记录的错误次数（此参数不适用于生产次数）</param>
+        /// <returns></returns>
+        protected SendResultONS TryToSend(IONSProducer producer, Message message, object parameter, string key, int errorTimes)
+        {
+            SendResultONS sendResultONS = null;
+
+            try
+            {
+                sendResultONS = producer.send(message, parameter);
+            }
+            catch (Exception e)
+            {
+                //错误计数累加
+                errorTimes++;
+                //无论是阿里云服务不可用，还是生产者挂了，一共3次机会，即执行1次，然后最多重试两次                 
+                if (errorTimes < 3)
+                {
+                    //如果生产者挂了
+                    if (e.ToString().IndexOf("Your producer has been shutdown.") >= 0)
+                    {
+                        //置空producer
+                        producer = null;
+                        //重新获取producer并启动
+                        producer = GetProducer();
+                        //等待3秒
+                        System.Threading.Thread.Sleep(3000);
+                    }
+                    else
+                    {
+                        //如果是阿里云服务不可用，等待1秒
+                        System.Threading.Thread.Sleep(1000);
+                    }
+
+                    //递归
+                    sendResultONS = TryToSend(producer, message, parameter, key, errorTimes);
+                }
+                else
+                {
+                    //重试2次都还是失败
+                    string className = this.GetType().Name;
+                    string methodName = "Process";
+                    string errorMessage = _Environment + "." + _ApplicationAlias + "." + className + "." + methodName + "尝试发送时，出现了第" + errorTimes + "次出错，key=" + key + "：" + e.ToString();
+                    //记录本地错误日志
+                    DebugUtil.Debug(errorMessage);
+                    //记录FATAL日志
+                    ONSHelper.SaveLog(LogTypeEnum.FATAL, className, methodName, errorMessage);
+                    //发送邮件
+                    ONSHelper.SendDebugMail(_Environment + "." + _ApplicationAlias + "." + className + "." + methodName + "尝试发送时出错", errorMessage);
+                    //抛出异常
+                    throw new Exception(errorMessage);
+                }
+            }
+
+            return sendResultONS;
         }
     }
 }

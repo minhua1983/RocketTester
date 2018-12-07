@@ -28,6 +28,7 @@ namespace RocketTester.ES
 
             // Below is an example of how you can handle LogRequest event and provide 
             // custom logging implementation for it
+            
             context.BeginRequest += (o, e) =>
             {
                 //定义Response.Filter，这样在EndRequest中可以用((ResponseFilter)Response.Filter).Body获取到响应的内容

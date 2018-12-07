@@ -35,6 +35,7 @@ namespace RocketTester.ONS
             string body = "";
             bool accomplishment = false;
             int producedTimes = 0;
+            int errorTimes = 0;
             try
             {
                 //获取requestTraceId
@@ -55,30 +56,17 @@ namespace RocketTester.ONS
                 message.putUserProperties("shardingKey", shardingKey);
                 //发送消息
                 SendResultONS sendResultONS = null;
-                try
-                {
-                    sendResultONS = producer.send(message, shardingKey);
-                    accomplishment = true;
-                    producedTimes = 1;
-                }
-                catch (Exception e)
-                {
-                    string className = this.GetType().Name;
-                    string methodName = "Process";
-
-                    //记录本地错误日志
-                    DebugUtil.Debug(_Environment + "." + _ApplicationAlias + "." + className + "." + methodName + "出错，key=" + key + "：" + e.ToString());
-
-                    //记录FATAL日志
-                    ONSHelper.SaveLog(LogTypeEnum.FATAL, className, methodName, _Environment + "." + _ApplicationAlias + "." + className + "." + methodName + "出错，key=" + key + "：" + e.ToString());
-
-                    //发送邮件
-                    ONSHelper.SendDebugMail(_Environment + "." + _ApplicationAlias + "." + className + "." + methodName + "出错", "key=" + key + "：" + e.ToString());
-                }
+                //尝试发送
+                sendResultONS = TryToSend(producer, message, shardingKey, key, errorTimes);
+                //判断结果，一般走不到这步，因为如果发送有问题会直接抛出异常的
                 if (sendResultONS == null)
                 {
-                    throw new Exception("发送ORDER消息失败。");
+                    throw new Exception("发送ORDER消息失败。key=" + key);
                 }
+                //更新发送状态
+                accomplishment = true;
+                //更新消费次数
+                producedTimes = 1;
             }
             catch (Exception e)
             {

@@ -15,7 +15,7 @@ using Nest.Framework;
 
 namespace RocketTester.ONS
 {
-    public abstract class AbstractTranProducerService<T> : AbstractProducerService<T>, IAbstractProducerService
+    public abstract class AbstractTranProducerService<T> : AbstractProducerService<T>
     {
         public AbstractTranProducerService(Enum topicTag)
             : base(ONSMessageType.TRAN, topicTag)
@@ -39,6 +39,7 @@ namespace RocketTester.ONS
             string body = "";
             bool accomplishment = false;
             int producedTimes = 0;
+            int errorTimes = 0;
             try
             {
                 //获取requestTraceId
@@ -47,27 +48,16 @@ namespace RocketTester.ONS
                 body = model.GetType().Name.ToLower() == "system.string" ? model.ToString() : JsonConvert.SerializeObject(model);
                 //防止中文乱码
                 body = Base64Util.Encode(body);
+                //获取生产者
+                IONSProducer producer = GetProducer();
                 //Message实体的body不能为空
                 Message message = new Message(this.Topic, this.Tag, body);
                 message.setKey(key);
                 message.putUserProperties("type", ONSMessageType.TRAN.ToString());
                 message.putUserProperties("requestTraceId", requestTraceId);
-                //message.putUserProperties("shardingKey", shardingKey);
-
-                DebugUtil.Debug("topic " + this.Topic);
-                DebugUtil.Debug("tag " + this.Tag);
-
-
 
                 //获取InternalProcess方法
                 MethodInfo methodInfo = this.GetType().GetMethod("InternalProcess", BindingFlags.NonPublic | BindingFlags.Instance);
-
-                DebugUtil.Debug("this.GetType().name " + this.GetType().FullName);
-
-                DebugUtil.Debug("body " + body);
-                DebugUtil.Debug("methodInfo.Name " + methodInfo.Name);
-                DebugUtil.Debug("methodInfo.ReflectedType.FullName " + methodInfo.ReflectedType.FullName);
-
 
                 string executerMethodName = methodInfo.ReflectedType.FullName + "." + methodInfo.Name;
                 string checkerMethodName = methodInfo.ReflectedType.FullName + "." + methodInfo.Name;
@@ -90,34 +80,19 @@ namespace RocketTester.ONS
 
                 //实例化LocalTransactionExecuter对象
                 ONSLocalTransactionExecuter executer = new ONSLocalTransactionExecuter();
-
-                DebugUtil.Debug("get ready to send message...");
-
-                //生成半消息，并调用LocalTransactionExecuter对象的execute方法，它内部会执行委托实例（同时会将执行后的TransactionResult以Message的key为redis的key存入redis中），根据执行结果再决定是否要将消息状态设置为rollback或commit
-                IONSProducer transactionProducer = GetProducer();
+                //定义消息结果对象
                 SendResultONS sendResultONS = null;
-                try
-                {
-                    sendResultONS = transactionProducer.send(message, executer);
-                }
-                catch (Exception e)
-                {
-                    string className = this.GetType().Name;
-                    string methodName = "Process";
-
-                    //记录本地错误日志
-                    DebugUtil.Debug(_Environment + "." + _ApplicationAlias + "." + className + "." + methodName + "出错，key=" + key+"：" + e.ToString());
-
-                    //记录FATAL日志
-                    ONSHelper.SaveLog(LogTypeEnum.FATAL, className, methodName, _Environment + "." + _ApplicationAlias + "." + className + "." + methodName + "出错，key=" + key + "：" + e.ToString());
-
-                    //发送邮件
-                    ONSHelper.SendDebugMail(_Environment + "." + _ApplicationAlias + "." + className + "." + methodName + "出错", "key=" + key + "：" + e.ToString());
-                }
+                //尝试发送
+                sendResultONS = TryToSend(producer, message, executer, key, errorTimes);
+                //判断结果，一般走不到这步，因为如果发送有问题会直接抛出异常的
                 if (sendResultONS == null)
                 {
                     throw new Exception("发送TRAN消息失败。key=" + key);
                 }
+                //更新发送状态
+                accomplishment = true;
+                //更新消费次数
+                producedTimes = 1;
             }
             catch (Exception e)
             {

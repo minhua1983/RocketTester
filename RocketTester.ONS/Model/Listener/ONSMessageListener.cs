@@ -55,8 +55,6 @@ namespace RocketTester.ONS
                 DebugUtil.Debug("MESSAGE_KEY:" + value.getKey() + ",error:" + e.ToString());
             }
             return action;
-
-            return ons.Action.CommitMessage;
         }
     }
 }

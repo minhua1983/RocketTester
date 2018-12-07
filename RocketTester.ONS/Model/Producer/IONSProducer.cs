@@ -38,7 +38,7 @@ namespace RocketTester.ONS
         void shutdown();
 
         /// <summary>
-        /// 代理TransactionProducer实例的send方法
+        /// 代理Producer实例的send方法
         /// </summary>
         /// <param name="message">Message实例</param>
         /// <param name="parameter">parameter参数</param>

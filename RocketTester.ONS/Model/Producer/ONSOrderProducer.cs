@@ -27,10 +27,10 @@ namespace RocketTester.ONS
 
         OrderProducer _producer;
 
-        public ONSOrderProducer(string topic, string produceId, OrderProducer orderProducer)
+        public ONSOrderProducer(string topic, string producerId, OrderProducer orderProducer)
         {
             this.Topic = topic;
-            this.ProducerId = produceId;
+            this.ProducerId = producerId;
             this.Type = ONSMessageType.ORDER.ToString().ToUpper();
             _producer = orderProducer;
         }
@@ -65,9 +65,14 @@ namespace RocketTester.ONS
         /// <returns>SendResultONS实例</returns>
         public SendResultONS send(Message message, object parameter)
         {
-            string shardingKey = parameter.ToString();
-            DebugUtil.Debug("shardingKey:" + shardingKey);
-            return _producer.send(message, shardingKey);
+            SendResultONS sendResultONS = null;
+            if (_producer != null)
+            {
+                string shardingKey = parameter.ToString();
+                DebugUtil.Debug("shardingKey:" + shardingKey);
+                sendResultONS = _producer.send(message, shardingKey);
+            }
+            return sendResultONS;
         }
     }
 }

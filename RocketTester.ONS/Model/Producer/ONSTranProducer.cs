@@ -30,10 +30,10 @@ namespace RocketTester.ONS
 
         TransactionProducer _producer;
 
-        public ONSTranProducer(string topic, string produceId, TransactionProducer transactionProducer)
+        public ONSTranProducer(string topic, string producerId, TransactionProducer transactionProducer)
         {
             this.Topic = topic;
-            this.ProducerId = produceId;
+            this.ProducerId = producerId;
             this.Type = ONSMessageType.TRAN.ToString().ToUpper(); ;
             _producer = transactionProducer;
         }
@@ -65,8 +65,13 @@ namespace RocketTester.ONS
         /// <returns>SendResultONS实例</returns>
         public SendResultONS send(Message message, object parameter)
         {
-            ONSLocalTransactionExecuter executer = parameter as ONSLocalTransactionExecuter;
-            return _producer.send(message, executer);
+            SendResultONS sendResultONS = null;
+            if (_producer != null)
+            {
+                ONSLocalTransactionExecuter executer = parameter as ONSLocalTransactionExecuter;
+                sendResultONS = _producer.send(message, executer);
+            }
+            return sendResultONS;
         }
     }
 }

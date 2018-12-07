@@ -85,14 +85,15 @@ namespace RocketTester.ONS
                 try
                 {
                     //初始化服务类列表和服务类标签列表
-                    InitialProperties();
+                    InitializeProperties();
 
                     //判断生产者的服务类是否存在
                     if (ONSProducerServiceList.Count > 0)
                     {
-                        //输出生产者方法
+                        //输出生产服务类类名
                         ONSProducerServiceList.ForEach(service => DebugUtil.Debug("生产者的服务类：" + service.GetType().FullName));
 
+                        //判断生产者实例列表是否为空
                         if (ONSProducerList != null && ONSProducerList.Count > 0)
                         {
                             ONSProducerList.ForEach(producer =>
@@ -107,9 +108,10 @@ namespace RocketTester.ONS
                     //判断消费者的服务类是否存在
                     if (ONSConsumerServiceList.Count > 0)
                     {
-                        //输出消费者方法
+                        //输出消费服务类类名
                         ONSConsumerServiceList.ForEach(service => DebugUtil.Debug("消费者的服务类：" + service.GetType().FullName));
 
+                        //判断消费者实例列表是否为空
                         if (ONSConsumerList != null && ONSConsumerList.Count > 0)
                         {
                             ONSConsumerList.ForEach(consumer =>
@@ -174,6 +176,10 @@ namespace RocketTester.ONS
                             DebugUtil.Debug("ConsumerId（" + consumer.Type.ToString() + @"）:" + consumer.ConsumerId + @"消费者.shutdown()");
                         });
                     }
+
+                    //延时若干毫秒
+                    Thread.Sleep(1000);
+                    DebugUtil.Debug(_Environment + "." + _ApplicationAlias + ".ONSHelper.Destroy最后延迟1000毫秒");
                 }
                 catch (Exception e)
                 {
@@ -186,10 +192,6 @@ namespace RocketTester.ONS
                     //发送邮件
                     SendDebugMail(_Environment + "." + _ApplicationAlias + ".ONSHelper.Destroy出错", "：" + e.ToString());
                 }
-
-                //延时若干毫秒
-                Thread.Sleep(1000);
-                DebugUtil.Debug(_Environment + "." + _ApplicationAlias + ".ONSHelper.Destroy最后延迟1000毫秒");
             }
         }
         #endregion
@@ -198,7 +200,7 @@ namespace RocketTester.ONS
         /// <summary>
         /// 初始化属性
         /// </summary>
-        static void InitialProperties()
+        static void InitializeProperties()
         {
             //实例化生产者的服务类列表
             ONSProducerServiceList = new List<object>();
