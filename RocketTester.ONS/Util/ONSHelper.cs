@@ -8,6 +8,7 @@ using System.Configuration;
 using System.Text;
 using System.Threading;
 using System.IO;
+using System.Net;
 using ons;
 using Redis.Framework;
 using Newtonsoft.Json;
@@ -216,7 +217,7 @@ namespace RocketTester.ONS
             CheckerMethodDictionary = new ConcurrentDictionary<string, MethodInfo>();
 
 
-            
+
 
             //*
             //获取当前应用域下的所有程序集
@@ -226,9 +227,26 @@ namespace RocketTester.ONS
             {
                 foreach (Assembly assembly in assemblies)
                 {
-                    Type[] types = assembly.GetTypes();
+
+                    Type[] types = null;
+                    try
+                    {
+                        types = assembly.GetTypes();
+                    }
+                    catch (Exception e)
+                    {
+                        //通过vs2017编译后反射会报错，需要捕捉错误。忽略此处错误即可
+                        //Microsoft.Build.Tasks.CodeAnalysis, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35
+                        //尝试获取所有类时发生异常
+                        /*
+                        string body = assembly.FullName + "尝试获取所有类时发生异常：" + e.ToString();
+                        SendDebugMail("ONSHelper.InitializeProperties方法反射时捕获异常", body);
+                        //*/
+                    }
+
                     if (types != null)
                     {
+                        //*
                         foreach (Type type in types)
                         {
                             if (type.BaseType != null)
@@ -294,6 +312,7 @@ namespace RocketTester.ONS
                                 }
                             }
                         }
+                        //*/
                     }
                 }
             }
@@ -433,6 +452,7 @@ namespace RocketTester.ONS
         }
         #endregion
 
+        #region 获取字符串格式的标签列表
         /// <summary>
         /// 获取字符串格式的标签列表
         /// </summary>
@@ -453,7 +473,9 @@ namespace RocketTester.ONS
             }
             return consumerTags;
         }
+        #endregion
 
+        #region 记录日志
         /// <summary>
         /// 记录日志（建议在有上下文的环境下使用，否则可能会报错）
         /// </summary>
@@ -478,7 +500,9 @@ namespace RocketTester.ONS
                 DebugUtil.Debug(content + "，尝试发送es的FATAL日志时发生异常：" + esError.ToString());
             }
         }
+        #endregion
 
+        #region 发送DEBUG邮件
         /// <summary>
         /// 发送DEBUG邮件，一般在发生严重FATAL错误时，需要发送邮件通知该网站相关人员
         /// </summary>
@@ -494,8 +518,25 @@ namespace RocketTester.ONS
             catch (Exception mailError)
             {
                 //发送邮件错误
-                DebugUtil.Debug(subject +"，"+ body + "，尝试发送邮件时发生异常：" + mailError.ToString());
+                DebugUtil.Debug(subject + "，" + body + "，尝试发送邮件时发生异常：" + mailError.ToString());
             }
         }
+        #endregion
+
+        #region 获取ServerIp
+        /// <summary>
+        /// 获取ServerIp
+        /// </summary>
+        /// <returns></returns>
+        public static string GetServerIp()
+        {
+            string hostName = Dns.GetHostName();   //获取本机名
+            IPHostEntry localhost = Dns.GetHostByName(hostName);    //方法已过期，可以获取IPv4的地址
+            //IPHostEntry localhost = Dns.GetHostEntry(hostName);   //获取IPv6地址
+            IPAddress localaddr = localhost.AddressList[0];
+
+            return localaddr.ToString();
+        }
+        #endregion
     }
 }

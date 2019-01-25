@@ -61,5 +61,8 @@ namespace RocketTester.ONS
 
         [JsonProperty("shardingKey")]
         public string ShardingKey { get; set; }
+
+        [JsonProperty("serverIp")]
+        public string ServerIp { get; set; }
     }
 }

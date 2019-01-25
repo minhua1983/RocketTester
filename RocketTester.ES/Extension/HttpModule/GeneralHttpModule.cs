@@ -28,7 +28,7 @@ namespace RocketTester.ES
 
             // Below is an example of how you can handle LogRequest event and provide 
             // custom logging implementation for it
-            
+
             context.BeginRequest += (o, e) =>
             {
                 //定义Response.Filter，这样在EndRequest中可以用((ResponseFilter)Response.Filter).Body获取到响应的内容
@@ -50,18 +50,18 @@ namespace RocketTester.ES
                 {
                     Exception lastError = HttpContext.Current.Server.GetLastError();
 
-                    string lodId=GeneralLogUtil.Error(lastError.ToString());
+                    string logId = GeneralLogUtil.Error(lastError.ToString());
 
                     ServiceReturnMsg serviceReturnMsg = new ServiceReturnMsg()
                     {
                         ReturnCode = -9999,
-                        ReturnMsg =""
+                        ReturnMsg = "服务器异常:" + logId
                     };
                     string json = JsonConvert.SerializeObject(serviceReturnMsg);
                     HttpContext.Current.Response.Write(json);
                     HttpContext.Current.Response.End();
 
-                    
+
                 }
             };
         }

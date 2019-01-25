@@ -12,5 +12,15 @@ namespace RocketTester.ONS
         /// 创建运单
         /// </summary>
         CREATE_WAYBILL,
+
+        /// <summary>
+        /// 删除预订单
+        /// </summary>
+        DELETE_PREWAYBILL,
+
+        /// <summary>
+        /// 原始采购单
+        /// </summary>
+        ORIGINAL_PURCHASE_ORDER,
     }
 }

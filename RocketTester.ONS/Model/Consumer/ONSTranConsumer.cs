@@ -73,8 +73,11 @@ namespace RocketTester.ONS
 
         public void subscribe(string topic, string tags)
         {
-            _listener = new ONSMessageListener(ClassType);
-            _consumer.subscribe(topic, tags, _listener);
+            if (_consumer != null)
+            {
+                _listener = new ONSMessageListener(ClassType);
+                _consumer.subscribe(topic, tags, _listener);
+            }
         }
     }
 }

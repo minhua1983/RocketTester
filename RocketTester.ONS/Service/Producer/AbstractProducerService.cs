@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Configuration;
 using System.Reflection;
 using System.Web;
+using System.Runtime.Remoting.Messaging;
 using Nest.Framework;
 using Newtonsoft.Json;
 using ons;
@@ -15,8 +16,8 @@ namespace RocketTester.ONS
 {
     public abstract class AbstractProducerService<T> : IAbstractProducerService
     {
-        //获取当前环境，p代表生产环境production，s代表测试环境staging，d代表开发环境development
-        protected static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "p";
+        //获取当前环境，p代表生产环境production，u代表预生产环境uat，s代表测试环境staging，d代表开发环境development（理论上不存在开发环境）
+        protected static string _Environment = ConfigurationManager.AppSettings["Environment"] ?? "s";
         //应用别名
         protected static string _ApplicationAlias = ConfigurationManager.AppSettings["ApplicationAlias"] ?? "unknown";
         //获取是否允许发送消息，此开关用于初次上线正式时，由于要观察一段时间，因此AliyunOnsIsEnabled是"1"，但是AliyunOnsIsAllowedToSend是"0"
@@ -108,6 +109,7 @@ namespace RocketTester.ONS
                 producerData.FailureReason = failureReason;
                 producerData.ProducedTimes = producedTimes;
                 producerData.ShardingKey = shardingKey;
+                producerData.ServerIp = ONSHelper.GetServerIp();
                 NestDataHelper.WriteData(producerData);
             }
             catch (Exception e)
@@ -180,14 +182,23 @@ namespace RocketTester.ONS
         /// <returns></returns>
         protected string GetRequestTraceId()
         {
-            string requestTraceId = "";
-            if (HttpContext.Current != null)
+            string requestTraceId = CallContext.LogicalGetData("TraceId") == null ? "" : CallContext.LogicalGetData("TraceId").ToString();
+            if (requestTraceId != "")
             {
-                if (HttpContext.Current.Items != null)
+                //CallContext中存在TraceId
+                return requestTraceId;
+            }
+            else
+            {
+                //CallContext中不存在TraceId
+                if (HttpContext.Current != null)
                 {
-                    if (HttpContext.Current.Items.Contains("TraceId"))
+                    if (HttpContext.Current.Items != null)
                     {
-                        requestTraceId = HttpContext.Current.Items["TraceId"].ToString();
+                        if (HttpContext.Current.Items.Contains("TraceId"))
+                        {
+                            requestTraceId = HttpContext.Current.Items["TraceId"].ToString();
+                        }
                     }
                 }
             }

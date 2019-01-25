@@ -140,6 +140,10 @@ namespace RocketTester.ES
                 errorGeneralLog.RequestAction = action == null ? "" : action.ToString();
                 errorGeneralLog.RequestController = controller == null ? "" : controller.ToString();
                 errorGeneralLog.CreateTime = errorGeneralLog.CreateTime == default(DateTime) ? DateTime.Now : errorGeneralLog.CreateTime;
+
+                //写入es
+                NestDataHelper.WriteLog(generalLog);
+
                 return errorGeneralLog.Id;
             }
             return null;

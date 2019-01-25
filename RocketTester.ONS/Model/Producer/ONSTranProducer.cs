@@ -43,7 +43,10 @@ namespace RocketTester.ONS
         /// </summary>
         public void start()
         {
-            _producer.start();
+            if (_producer != null)
+            {
+                _producer.start();
+            }
         }
 
         /// <summary>

@@ -200,6 +200,7 @@ namespace RocketTester.ONS
                 producerData.FailureReason = failureReason;
                 producerData.ProducedTimes = producedTimes;
                 producerData.ShardingKey = "";
+                producerData.ServerIp = ONSHelper.GetServerIp();
                 NestDataHelper.WriteData(producerData);
             }
 

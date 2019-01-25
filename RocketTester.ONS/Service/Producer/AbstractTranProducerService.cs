@@ -53,7 +53,7 @@ namespace RocketTester.ONS
                 //Message实体的body不能为空
                 Message message = new Message(this.Topic, this.Tag, body);
                 message.setKey(key);
-                message.putUserProperties("type", ONSMessageType.TRAN.ToString());
+                message.putUserProperties("type", this.MessageType.ToString());
                 message.putUserProperties("requestTraceId", requestTraceId);
 
                 //获取InternalProcess方法
