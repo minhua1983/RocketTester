@@ -20,8 +20,8 @@ namespace RocketTester.UI
         private static string Ons_Topic = "order_msg";
         private static string Ons_ProducerId = "PID_PO_Maker";
         private static string Ons_ConsumerId = "CID_PO_RCVER";
-        private static string Ons_AccessKey = "LTAIcFfgg7NRErzP";
-        private static string Ons_SecretKey = "abGkggLOjCwiWKmqFNDjAcu6k3g8JN";
+        private static string Ons_AccessKey = "";
+        private static string Ons_SecretKey = "";
 
         public Form1()
         {
