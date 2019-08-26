@@ -47,8 +47,10 @@ namespace RocketTester.ONS
             {
                 topic = value.getTopic();
                 tag = value.getTag();
-                pid = "PID_" + value.getTopic().ToUpper();
-                cid = ("CID_" + topic + "_" + _ApplicationAlias + "_" + classType.Name).ToUpper();
+                //pid = "PID_" + value.getTopic().ToUpper();
+                pid = "GID_" + value.getTopic().ToUpper();
+                //cid = ("CID_" + topic + "_" + _ApplicationAlias + "_" + classType.Name).ToUpper();
+                cid = ("GID_" + topic + "_" + _ApplicationAlias + "_" + classType.Name).ToUpper();
                 key = value.getKey();
                 type = value.getUserProperties("type");
                 body = value.getMsgBody();

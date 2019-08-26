@@ -63,7 +63,8 @@ namespace RocketTester.ONS
             {
                 topic = value.getTopic();
                 tag = value.getTag();
-                pid = "PID_" + value.getTopic().ToUpper();
+                //pid = "PID_" + value.getTopic().ToUpper();
+                pid = "GID_" + value.getTopic().ToUpper();
                 key = value.getKey();
                 body = value.getMsgBody();
                 requestTraceId = value.getUserProperties("requestTraceId") ?? "";

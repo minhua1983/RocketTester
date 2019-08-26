@@ -65,7 +65,8 @@ namespace RocketTester.ONS
             this.TopicTag = topicTag;
             this.Topic = (_Environment + "_" + TopicTag.GetType().Name).ToUpper();
             this.Tag = TopicTag.ToString();
-            this.Pid = ("PID_" + this.Topic).ToUpper();
+            //this.Pid = ("PID_" + this.Topic).ToUpper();
+            this.Pid = ("GID_" + this.Topic).ToUpper();
         }
 
         /// <summary>
@@ -157,6 +158,7 @@ namespace RocketTester.ONS
                         ONSFactoryProperty onsProducerFactoryProperty = new ONSFactoryProperty();
                         onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.AccessKey, _AliyunOnsAccessKey);
                         onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.SecretKey, _AliyunOnsSecretKey);
+                        //用老的.net SDK按最新的RocketMQ架构，引入GroupId代替ProducerId和ConsumerId
                         onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.ProducerId, this.Pid);
                         onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.PublishTopics, this.Topic);
 

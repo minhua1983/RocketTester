@@ -253,6 +253,7 @@ namespace RocketTester.ONS
                             {
                                 if (type.BaseType.FullName != null)
                                 {
+                                    //原本事务消息是需要自动注册，因为ProducerService必须开发者自己实现。但是在2019年01月23日大更新后，老SDK在生成Producer时不再需要输入ProducerId了，但是TranProducer实例化时会报错。因此这里禁用事务消息功能。
 
                                     //获取当前应用作为"事务"类型生产者的相关信息
                                     CreateProducer<AbstractTranProducerService<object>>(assembly, type, ONSMessageType.TRAN, (onsProducerFactoryProperty, topic, producerId) =>
@@ -346,7 +347,8 @@ namespace RocketTester.ONS
                 {
                     string serviceTopic = topicTag.GetType().Name;
                     string topic = (_Environment + "_" + serviceTopic).ToUpper();
-                    string producerId = ("PID_" + topic).ToUpper();
+                    //string producerId = ("PID_" + topic).ToUpper();
+                    string producerId = ("GID_" + topic).ToUpper();
                     IONSProducer producer = ONSProducerList.Where(p => (p.Type == messageType.ToString()) && (p.ProducerId == producerId)).FirstOrDefault();
                     if (producer == null)
                     {
@@ -354,6 +356,7 @@ namespace RocketTester.ONS
                         ONSFactoryProperty onsProducerFactoryProperty = new ONSFactoryProperty();
                         onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.AccessKey, _AliyunOnsAccessKey);
                         onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.SecretKey, _AliyunOnsSecretKey);
+                        //用老的.net SDK按最新的RocketMQ架构，引入GroupId代替ProducerId和ConsumerId
                         onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.ProducerId, producerId);
                         onsProducerFactoryProperty.setFactoryProperty(ONSFactoryProperty.PublishTopics, topic);
 
@@ -410,7 +413,9 @@ namespace RocketTester.ONS
                         string className = type.Name;
 
                         string topic = (_Environment + "_" + serviceTopic).ToUpper();
-                        string consumerId = ("CID_" + topic + "_" + _ApplicationAlias + "_" + className).ToUpper();
+                        //CID修改成GID
+                        //string consumerId = ("CID_" + topic + "_" + _ApplicationAlias + "_" + className).ToUpper();
+                        string consumerId = ("GID_" + topic + "_" + _ApplicationAlias + "_" + className).ToUpper();
 
                         DebugUtil.Debug("consumerId:" + consumerId);
 
